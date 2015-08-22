@@ -111,9 +111,18 @@ module Target =
         { TargetCentre = centre
           TargetRadius = radius }
 
+    /// Get the centre of a target.
+    let centre target = target.TargetCentre
+
+    /// Get the radius of a target.
+    let radius target = target.TargetRadius
+
 module Tree =
     /// Gets the starting vertex of a tree.
     let start tree = tree.TreeStart
 
     /// Gets the first node of a tree.
     let firstNode tree = tree.TreeFirstNode
+
+    /// Get the parameters of a tree.
+    let parameters tree = tree.TreeParameters
