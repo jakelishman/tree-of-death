@@ -60,7 +60,7 @@ module Geometry =
     let cross a b = Line.x a * Line.y b - Line.y a * Line.x b
 
     /// Dot product.
-    let dot a v = Line.x a * Line.x b + Line.y a * Line.y b
+    let dot a b = Line.x a * Line.x b + Line.y a * Line.y b
 
     /// Get the magnitude of a line (r . r).
     let magnitude a = sqrt <| (float (Line.x a)) ** 2.0 + (float (Line.y a)) ** 2.0

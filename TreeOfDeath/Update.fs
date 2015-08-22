@@ -32,7 +32,7 @@ module Logic =
         let targetVariation = 1.0 / 2.0
 
         /// The approximate radius of the target.
-        let targetRadius = 50.0
+        let targetRadius = 25.0
         /// The variation in the radius of the target.
         let targetRadiusVariation = 1.0 / 2.0
 
