@@ -50,3 +50,29 @@ module Model =
           RenderObstacle : Obstacle -> GraphicsWindow -> unit
           RenderTarget   : Target -> GraphicsWindow -> unit
           RenderScene    : Scene -> GraphicsWindow -> unit }
+
+module Vertex =
+    /// Creates a vertex with the specified x and y coordinates.
+    let create x y = { X = x ; Y = y }
+
+    /// Gets the x coordinate of a vertex.
+    let x vertex = vertex.X
+
+    /// Gets the y coordinate of a vertex.
+    let y vertex = vertex.Y
+
+    /// Draws the vertex using the speicifed drawing function.
+    let draw drawFunc vertex =
+        drawFunc vertex.X vertex.Y
+
+module Obstacle = 
+    /// Creates an obstacle defined by a polygon consisting of the specified vertex list.
+    let create vertices =
+        if List.length vertices < 3 then failwith "Cannot create an obstacle with fewer than 3 vertices."
+        { Polygon = vertices }
+
+module Target = 
+    /// Creates a target with the specified centre and radius.
+    let create centre radius =
+        { Centre = centre
+          Radius = radius }
