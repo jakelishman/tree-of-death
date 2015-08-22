@@ -40,7 +40,7 @@ module Model =
     /// Defines a cut performed by the player which prunes the tree.
     type Cut =
         { CutStart      : Vertex 
-          CutEnd        : Vertex
+          CutFinish     : Vertex
           CutInProgress : bool }
     
     /// Defines the game scene.
@@ -58,7 +58,7 @@ module Model =
             | ShapeBranch of shapeId : string * left : TreeShape * right : TreeShape
 
         /// Contains all the shape identifies in the scene which belong to an obstacle.
-        type ObstacleShape = { ObstacleParts : string list }
+        type ObstacleShape = { Triangles : string list }
 
         /// Contains the shape identifier for the target in the scene.
         type TargetShape = { TargetShape : string }
@@ -105,16 +105,23 @@ module Obstacle =
         if List.length vertices < 3 then failwith "Cannot create an obstacle with fewer than 3 vertices."
         { ObstaclePolygon = vertices }
 
+    /// Returns the vertices of all the triangles contained in an obstacle.
+    let triangles obstacle = 
+        let v1 = List.head obstacle.ObstaclePolygon // take the first vertex
+        List.tail obstacle.ObstaclePolygon // and create a triangle for every subsequent pair of vertices
+        |> List.pairwise
+        |> List.map (fun (v2, v3) -> (v1, v2, v3))
+
 module Target = 
     /// Creates a target with the specified centre and radius.
     let create centre radius =
         { TargetCentre = centre
           TargetRadius = radius }
 
-    /// Get the centre of a target.
+    /// Gets the vertex representing the centre of the target.
     let centre target = target.TargetCentre
 
-    /// Get the radius of a target.
+    /// Gets the raidus of the target.
     let radius target = target.TargetRadius
 
 module Tree =
@@ -148,3 +155,40 @@ module Scene =
         { SceneTree      = tree
           SceneObstacles = obstacles
           SceneTarget    = target }
+
+module Cut =
+    /// Creates a cut with the specified start and finish point and a flag indicating whether it is in
+    /// progress or finished (i.e. when the player releases the mouse).
+    let create start finish inProgress =
+        { CutStart      = start
+          CutFinish     = finish
+          CutInProgress = inProgress }
+
+    /// Gets the starting vertex of a cut.
+    let start cut = cut.CutStart
+
+    /// Gets the end vertex of a cut.
+    let finish cut = cut.CutFinish
+
+    /// Checks whether the cut is in progress or finished.
+    let isInProgress cut = cut.CutInProgress
+    
+module TreeShape =
+    /// Creates a tree shape containing a single leaf.
+    let createLeaf shapeId = ShapeLeaf shapeId
+
+    /// Creates a tree shape containing a shape leading up to a branch point and the shapes for
+    /// the left and right trees after the branch.
+    let createBranch shapeId leftTree rightTree = ShapeBranch (shapeId, leftTree, rightTree)
+
+module ObstacleShape =
+    /// Creates an obstacle shape consisting of the given list of triangle shapes.
+    let create triangleIds = { Triangles = triangleIds }
+
+module TargetShape =
+    /// Creates a target shape with the specified shape identifier.
+    let create shapeId = { TargetShape = shapeId }
+
+module CutShape =
+    /// Creates a cut shape with the specified shape identifier.
+    let create shapeId = { CutShape = shapeId }
