@@ -11,6 +11,10 @@ module Logic =
         /// will grow by each step.
         let growthDistanceFraction = 1.0 / 40.0
 
+        /// The angle added to the left branch of the tree.
+        let angleLeft = System.Math.PI / 18.0 * 1.0<rad>
+        /// The angle added to the right branch of the tree.
+        let angleRight = System.Math.PI / 18.0 * -1.0<rad>
         /// The maximum angle variation that each branch may grow towards.
         let angleVariation = System.Math.PI / 4.0 * 1.0<rad>
 
@@ -33,9 +37,9 @@ module Logic =
         let targetRadiusVariation = 1.0 / 2.0
 
         /// X offset of the path to make the upper wall.
-        let wallXOffset = 600
+        let wallXOffset = 300
         /// Y offset of the path to make the lower wall.
-        let wallYOffset = 600
+        let wallYOffset = 300
 
         /// Number of sections of path to have for the wall obstacles.
         let pathSegments = 4
@@ -47,13 +51,13 @@ module Logic =
     let private varyParameter (parameter : float<'T>) (variation : float<'T>) =
         parameter + Random.fraction () * variation
 
-    /// Make a leaf branched out from a staring location, using the passed parameters.
-    let private makeLeaf start parameters =
-        let distance = varyParameter parameters.GrowthRate parameters.GrowthVariation
-        let angle    = float <| varyParameter parameters.BranchAngle parameters.AngleVariation
-        Leaf <| Vertex.create (int <| distance * cos angle) (int <| distance * sin angle)
-
     module Init =
+        /// Make a leaf branched out from a staring location, using the passed parameters.
+        let private makeStartLeaf start parameters =
+            let distance = varyParameter parameters.GrowthRate parameters.GrowthVariation
+            let angle    = float <| varyParameter parameters.BranchAngle parameters.AngleVariation
+            Leaf <| Vertex.create (int <| distance * cos angle) (int <| distance * sin angle)
+
         /// Choose a location to start the tree at.  Always picks somewhere close to the point (0, 0).
         let private chooseStartLocation () =
             let x = int <| varyParameter Quantities.startDistance Quantities.startVariation
@@ -74,7 +78,7 @@ module Logic =
                   BranchAngle       = angle
                   AngleVariation    = Quantities.angleVariation
                   BranchProbability = Quantities.branchProbability }
-            let node = makeLeaf start parameters
+            let node = makeStartLeaf start parameters
             Tree.create start node parameters
 
         /// Choose a location for the target, probably close to the bottom right of the screen.
@@ -155,3 +159,68 @@ module Logic =
             let tree      = tree target
             let obstacles = obstacles bottomRightCorner (Tree.start tree) target
             Scene.create tree obstacles target None
+
+    module Update =
+        /// Create a (left, right) pair of leaf nodes from the current point.
+        let private branchLeaf start parameters =
+            let leftDistance  = varyParameter parameters.GrowthRate parameters.GrowthVariation
+            let rightDistance = varyParameter parameters.GrowthRate parameters.GrowthVariation
+            let angle = varyParameter parameters.BranchAngle parameters.AngleVariation
+            let leftAngle  = float <| angle + Quantities.angleLeft
+            let rightAngle = float <| angle + Quantities.angleRight
+            let left  = polarToRectangular start leftDistance leftAngle
+            let right = polarToRectangular start rightDistance rightAngle
+            (Leaf left, Leaf right)
+
+        /// Grow the tree through one step.
+        let private grow tree =
+            let rec loop = function
+                | Leaf location ->
+                    if Random.nonNegativeFraction () < Tree.branchProbability tree then
+                        let (left, right) = branchLeaf location (Tree.parameters tree)
+                        Branch (location, left, right)
+                    else
+                        Leaf location
+                | Branch (location, left, right) -> Branch (location, loop left, loop right)
+            let newNode = loop (Tree.firstNode tree)
+            { tree with TreeFirstNode = newNode }
+
+        /// Check if the tree has collided with an object.
+        let private collidedWith tree obstacle = false
+
+        /// Check if the tree has reached the target, returning a boolean result.
+        let private reachedTarget tree target =
+            let rec loop = function
+                | Leaf location ->
+                    Geometry.distanceBetween location (Target.centre target) < (float <| Target.radius target)
+                | Branch (_, left, right) -> loop left || loop right
+            loop (Tree.firstNode tree)
+
+        /// Check if a collision has occurred.
+        let private collisionExists tree obstacles =
+            let folder state obstacle =
+                obstacle
+                |> collidedWith tree
+                |> (||) state
+            List.fold folder false obstacles
+
+        let prune cut tree = tree
+
+        /// Update the state of the game by one tick.
+        let scene scene cut =
+            let (cutter, cut') =
+                match cut with
+                | Some c when not <| Cut.isInProgress c -> (prune c, None)
+                | chop                                  -> ((fun x -> x), chop)
+            let tree =
+                scene
+                |> Scene.tree
+                |> grow
+                |> cutter
+            if collisionExists tree (Scene.obstacles scene) then GameLost
+            else if reachedTarget tree (Scene.target scene) then GameWon
+            else
+                scene
+                |> Scene.withTree tree
+                |> Scene.withCut cut'
+                |> GameInProgress

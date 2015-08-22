@@ -50,6 +50,12 @@ module Model =
           SceneTarget    : Target
           SceneCut       : Cut option }
 
+    /// The state the game is currently in.
+    type GameState =
+        | GameInProgress of Scene
+        | GameWon
+        | GameLost
+
     [<AutoOpen>]
     /// Defines types which represent shapes added to the scene for later reference.
     module Shapes = 
@@ -79,7 +85,7 @@ module Model =
         { Grow           : Tree -> Tree
           CheckCollision : Tree -> Obstacle -> bool
           ReachedTarget  : Tree -> Target -> bool
-          UpdateScene    : Scene -> Cut option -> Scene }
+          UpdateScene    : Scene -> Cut option -> GameState }
 
     /// API functions for rendering the scene (Anton).
     type RenderApi =
@@ -135,6 +141,9 @@ module Tree =
     /// Get the parameters of a tree.
     let parameters tree = tree.TreeParameters
 
+    /// Get the branch probability of a tree.
+    let branchProbability tree = tree.TreeParameters.BranchProbability
+
     /// Create a new tree with the given quantities.
     let create start node parameters =
         { TreeStart      = start
@@ -160,6 +169,12 @@ module Scene =
           SceneObstacles = obstacles
           SceneTarget    = target
           SceneCut       = cut }
+
+    /// Set the value of the tree to the given.
+    let withTree tree scene = { scene with SceneTree = tree }
+
+    /// Set the value of the cut to the given.
+    let withCut cut scene = { scene with SceneCut = cut }
 
 module Cut =
     /// Creates a cut with the specified start and finish point and a flag indicating whether it is in
