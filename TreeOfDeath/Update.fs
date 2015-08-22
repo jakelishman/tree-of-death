@@ -114,24 +114,24 @@ module Logic =
         let private obstacleLowerWall bottomRightCorner path =
             path
             |> List.map (fun vert -> Vertex.create (Vertex.x vert) (Vertex.y vert + Quantities.wallYOffset))
+            |> cons bottomRightCorner
+            |> List.rev
             |> cons (leftEdge <| List.head path)
             |> cons (leftEdge bottomRightCorner)
-            |> List.rev
-            |> cons bottomRightCorner
             |> Obstacle.create
 
         /// Create the upper limiting wall of the level.
         let private obstacleUpperWall bottomRightCorner path =
             path
             |> List.map (fun vert -> Vertex.create (Vertex.x vert + Quantities.wallXOffset) (Vertex.y vert))
+            |> cons bottomRightCorner
+            |> List.rev
             |> cons (topEdge <| List.head path)
             |> cons (topEdge bottomRightCorner)
-            |> List.rev
-            |> cons bottomRightCorner
             |> Obstacle.create
 
         /// Create a vertex list of an approximate path for the tree.
-        let private makePath start target =
+        let makePath start target =
             let distance = (Geometry.distanceBetween start target) / float Quantities.pathSegments
             let rec loop acc last = function
                 | 0 -> List.rev acc
