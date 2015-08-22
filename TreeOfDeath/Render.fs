@@ -47,8 +47,8 @@ module Render =
     /// identifier for the drawn shape.
     let private renderTarget target =
         let centre = Target.centre target
-        let shape = Shapes.AddEllipse(Target.radius target, Target.radius target)
-        Shapes.Move(shape, Vertex.x centre, Vertex.y centre)
+        let shape = Shapes.AddEllipse(2 * Target.radius target, 2 * Target.radius target)
+        Shapes.Move(shape, Vertex.x centre - Target.radius target, Vertex.y centre - Target.radius target)
         shape |> TargetShape.create
 
     /// Removes a target shape from the graphics window.
