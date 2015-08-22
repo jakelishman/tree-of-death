@@ -1,9 +1,11 @@
 ﻿namespace TreeOfDeath
 
 open Library
+open Library.Colors
 
 [<AutoOpen>]
 module Render =
+
     /// Renders a tree node from the given starting position.
     let rec private renderNode start = function
         // if this is a leaf node, then add a like and create a leaf tree shape
@@ -22,6 +24,8 @@ module Render =
     /// Renders a tree in the graphics window, returning the generated tree shape which contains
     /// identifiers for all the drawn shapes.
     let private renderTree tree =
+        GraphicsWindow.PenColor <- SaddleBrown
+        GraphicsWindow.PenWidth <- 4.0
         renderNode (Tree.start tree) (Tree.firstNode tree)
     
     /// Removes the tree shape fromm the graphics window.
@@ -32,6 +36,8 @@ module Render =
     /// Renders an obstacle in the graphics window, returning the generated obstacle shape which contains
     /// identifiers for all the drawn shapes. 
     let private renderObstacle obstacle =
+        GraphicsWindow.PenWidth   <- 0.0
+        GraphicsWindow.BrushColor <- DarkGreen
         Obstacle.triangles obstacle
         |> List.map (fun (v1, v2, v3) -> Shapes.AddTriangle (float <| Vertex.x v1, float <| Vertex.y v1,
                                                              float <| Vertex.x v2, float <| Vertex.y v2,
@@ -46,6 +52,8 @@ module Render =
     /// Renders a target in the graphics window, returning the generated obstacle shape which contains an
     /// identifier for the drawn shape.
     let private renderTarget target =
+        GraphicsWindow.PenWidth <- 0.0
+        GraphicsWindow.BrushColor <- Red
         let centre = Target.centre target
         let shape = Shapes.AddEllipse(2 * Target.radius target, 2 * Target.radius target)
         Shapes.Move(shape, Vertex.x centre - Target.radius target, Vertex.y centre - Target.radius target)
@@ -59,6 +67,8 @@ module Render =
     /// for the drawn shape.
     let private renderCut = function 
         | Some cut -> 
+            GraphicsWindow.PenColor <- Black
+            GraphicsWindow.PenWidth <- 1.0
             Shapes.AddLine(Vertex.x <| Cut.start  cut, Vertex.y <| Cut.start  cut,
                            Vertex.x <| Cut.finish cut, Vertex.y <| Cut.finish cut)
             |> CutShape.create |> Some
