@@ -12,8 +12,8 @@ module Model =
 
     /// A tree node.
     type Node =
-        | Branch of location : Vertex * left : Node * right : Node
         | Leaf   of location : Vertex
+        | Branch of location : Vertex * left : Node * right : Node
 
     /// A tree.
     type Tree =
@@ -28,14 +28,40 @@ module Model =
 
     /// Defines a cut performed by the player which prunes the tree.
     type Cut =
-        { CutStart : Vertex 
-          CutEnd   : Vertex }
+        { CutStart      : Vertex 
+          CutEnd        : Vertex
+          CutInProgress : bool }
     
     /// Defines the game scene.
     type Scene =
         { SceneTree      : Tree
           SceneObstacles : Obstacle list
           SceneTarget    : Target }
+
+    [<AutoOpen>]
+    /// Defines types which represent shapes added to the scene for later reference.
+    module Shapes = 
+        
+        /// Contains all the shapes identifiers in the scene which belong to a tree.
+        type TreeShape =
+            | ShapeLeaf   of shapeId : string
+            | ShapeBranch of shapeId : string * left : TreeShape * right : TreeShape
+
+        /// Contains all the shape identifies in the scene which belong to an obstacle.
+        type ObstacleShape = { ObstacleParts : string list }
+
+        /// Contains the shape identifier for the target in the scene.
+        type TargetShape = { TargetShape : string }
+
+        /// Contains the shape identifier for a cut in the scene.
+        type CutShape = { CutShape : string }
+
+        /// Contains all the shapes in the scene.
+        type SceneShape =
+            { SceneTreeShape     : TreeShape
+              SceneObstacleShape : ObstacleShape
+              SceneTargetShape   : TargetShape
+              SceneCutShape      : CutShape option }
 
     /// API functiosn for advancing updating the scene (Jake).
     type LogicApi =
@@ -46,10 +72,12 @@ module Model =
 
     /// API functions for rendering the scene (Anton).
     type RenderApi =
-        { RenderTree     : Tree -> GraphicsWindow -> unit
-          RenderObstacle : Obstacle -> GraphicsWindow -> unit
-          RenderTarget   : Target -> GraphicsWindow -> unit
-          RenderScene    : Scene -> GraphicsWindow -> unit }
+        { RenderTree      : Tree -> TreeShape
+          RenderObstacle  : Obstacle -> ObstacleShape
+          RenderTarget    : Target -> TargetShape
+          RenderCut       : Cut -> CutShape
+          InitialiseScene : Scene -> SceneShape
+          UpdateScene     : Scene -> SceneShape -> SceneShape }
 
 module Vertex =
     /// Creates a vertex with the specified x and y coordinates.
