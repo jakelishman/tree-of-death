@@ -19,7 +19,7 @@ module Logic =
         let angleVariation = System.Math.PI / 4.0 * 1.0<rad>
 
         /// The probability that a leaf will create a new branch at each step.
-        let branchProbability = 1.0 / 25.0
+        let branchProbability = 1.0 / 5.0
 
         /// The approximate distance in from the top left that the tree will begin at.
         let startDistance = 50.0
@@ -32,7 +32,7 @@ module Logic =
         let targetVariation = 1.0 / 2.0
 
         /// The approximate radius of the target.
-        let targetRadius = 10.0
+        let targetRadius = 50.0
         /// The variation in the radius of the target.
         let targetRadiusVariation = 1.0 / 2.0
 
@@ -54,23 +54,23 @@ module Logic =
     module Init =
         /// Make a leaf branched out from a staring location, using the passed parameters.
         let private makeStartLeaf start parameters =
-            let distance = varyParameter parameters.GrowthRate parameters.GrowthVariation
-            let angle    = float <| varyParameter parameters.BranchAngle parameters.AngleVariation
-            Leaf <| Vertex.create (int <| distance * cos angle) (int <| distance * sin angle)
+            // let distance = varyParameter parameters.GrowthRate parameters.GrowthVariation
+            // let angle    = float <| varyParameter parameters.BranchAngle parameters.AngleVariation
+            Leaf <| Vertex.create (int <| 100) (int <| 100)
 
         /// Choose a location to start the tree at.  Always picks somewhere close to the point (0, 0).
         let private chooseStartLocation () =
-            let x = int <| varyParameter Quantities.startDistance Quantities.startVariation
-            let y = int <| varyParameter Quantities.startDistance Quantities.startVariation
+            let x = 75 // int <| varyParameter Quantities.startDistance Quantities.startVariation
+            let y = 75 // int <| varyParameter Quantities.startDistance Quantities.startVariation
             Vertex.create x y
 
         /// Create an initial tree given a start vertex, and a direction and distance to grow in.
         let private tree target =
             let start = chooseStartLocation ()
-            let growthRate =
-                distanceBetween start target.TargetCentre
-                |> float
-                |> (*) Quantities.growthDistanceFraction
+            let growthRate = 3.0
+                // distanceBetween start target.TargetCentre
+                // |> float
+                // |> (*) Quantities.growthDistanceFraction
             let angle = angleBetween start target.TargetCentre
             let parameters =
                 { GrowthRate        = growthRate
@@ -83,14 +83,8 @@ module Logic =
 
         /// Choose a location for the target, probably close to the bottom right of the screen.
         let private chooseTargetLocation bottomRightCorner =
-            let x =
-                varyParameter Quantities.targetDistance Quantities.targetVariation
-                |> int
-                |> (-) bottomRightCorner.X
-            let y =
-                varyParameter Quantities.targetDistance Quantities.targetVariation
-                |> int
-                |> (-) bottomRightCorner.Y
+            let x = 900
+            let y = 550
             Vertex.create x y
 
         /// Choose the radius of the target object.
@@ -115,12 +109,26 @@ module Logic =
             { bottomRightCorner with Y = 0 }
 
         /// Create the lower limiting wall of the level.
-        let private obstacleLowerWall =
+        let private obstacleLowerLeft =
             [ Vertex.create 0 768
               Vertex.create 0 100
-              Vertex.create 200 100
-              Vertex.create 300 700
-              Vertex.create 100 700 ]
+              Vertex.create 200 350
+              Vertex.create 100 768 ]
+            |> Obstacle.create
+
+        let private obstacleTopRight =
+            [ Vertex.create 1024 0
+              Vertex.create 1024 300
+              Vertex.create 700 400
+              Vertex.create 500 500
+              Vertex.create 350 200
+              Vertex.create 350 0 ]
+            |> Obstacle.create
+
+        let private obstacleBottom =
+            [ Vertex.create 500 768 
+              Vertex.create 650 680
+              Vertex.create 800 768 ]
             |> Obstacle.create
 
         /// Create a vertex list of an approximate path for the tree.
@@ -140,7 +148,7 @@ module Logic =
         /// Create the obstacles for the level.
         let private obstacles bottomRightCorner start target =
             let path = makePath start (Target.centre target)
-            [ obstacleLowerWall ]
+            [ obstacleLowerLeft ; obstacleTopRight ; obstacleBottom ]
 
         /// Initialise a new scene.
         let scene bottomRightCorner =
@@ -163,15 +171,22 @@ module Logic =
 
         /// Grow the tree through one step.
         let private grow tree =
-            let rec loop = function
-                | Leaf location ->
-                    if Random.nonNegativeFraction () < Tree.branchProbability tree then
-                        let (left, right) = branchLeaf location (Tree.parameters tree)
-                        Branch (location, left, right)
+            let parameters = Tree.parameters tree
+            let rec loop branchProbability root  = function
+                | Leaf vertex ->
+                    if Random.nonNegativeFraction () < branchProbability then
+                        let (left, right) = branchLeaf vertex (Tree.parameters tree)
+                        Branch (vertex, left, right)
                     else
-                        Leaf location
-                | Branch (location, left, right) -> Branch (location, loop left, loop right)
-            let newNode = loop (Tree.firstNode tree)
+                        let (dx, dy) = (float <| Vertex.x vertex - Vertex.x root, float <| Vertex.y vertex - Vertex.y root)
+                        let length = sqrt(dx * dx + dy * dy)
+                        let newLength = length + parameters.GrowthRate
+                        let (newdx, newdy) = (int <| (dx * (newLength / length)), int <| (dy * (newLength / length)))
+                        Leaf (Vertex.create (Vertex.x root + newdx) (Vertex.y root + newdy))
+                | Branch (barnchPoint, left, right) -> 
+                    let newBranchProbability = branchProbability * (sqrt parameters.BranchProbability)
+                    Branch (barnchPoint, loop newBranchProbability barnchPoint left, loop newBranchProbability barnchPoint  right)
+            let newNode = loop (parameters.BranchProbability) (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = newNode }
 
         /// Check if the tree has collided with an object.
