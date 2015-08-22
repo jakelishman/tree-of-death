@@ -4,12 +4,6 @@ open Library
 
 [<AutoOpen>]
 module Model =
-    /// Radian unit of measure.
-    [<Measure>] type rad
-
-    /// A point in 2 dimensions.
-    type Vertex = { X : int ; Y : int }
-
     /// Boundaries of a polygon obstacle.
     type Obstacle = { ObstaclePolygon : Vertex list }
 
@@ -96,16 +90,6 @@ module Model =
           InitialiseScene : Scene -> SceneShape
           UpdateScene     : Scene -> SceneShape -> SceneShape }
 
-module Vertex =
-    /// Creates a vertex with the specified x and y coordinates.
-    let create x y = { X = x ; Y = y }
-
-    /// Gets the x coordinate of a vertex.
-    let x vertex = vertex.X
-
-    /// Gets the y coordinate of a vertex.
-    let y vertex = vertex.Y
-
 module Obstacle = 
     /// Creates an obstacle defined by a polygon consisting of the specified vertex list.
     let create vertices =
@@ -114,10 +98,7 @@ module Obstacle =
 
     /// Returns the vertices of all the triangles contained in an obstacle.
     let triangles obstacle = 
-        let v1 = List.head obstacle.ObstaclePolygon // take the first vertex
-        List.tail obstacle.ObstaclePolygon // and create a triangle for every subsequent pair of vertices
-        |> List.pairwise
-        |> List.map (fun (v2, v3) -> (v1, v2, v3))
+        Geometry.trianglesInPolygon obstacle.ObstaclePolygon
 
 module Target = 
     /// Creates a target with the specified centre and radius.

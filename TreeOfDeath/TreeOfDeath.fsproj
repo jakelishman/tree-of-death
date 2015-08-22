@@ -57,8 +57,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Model.fs" />
     <Compile Include="Geometry.fs" />
+    <Compile Include="Model.fs" />
     <Compile Include="Random.fs" />
     <Compile Include="Update.fs" />
     <Compile Include="Render.fs" />
