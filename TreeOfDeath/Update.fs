@@ -154,4 +154,4 @@ module Logic =
             let target    = target bottomRightCorner
             let tree      = tree target
             let obstacles = obstacles bottomRightCorner (Tree.start tree) target
-            Scene.create tree obstacles target
+            Scene.create tree obstacles target None

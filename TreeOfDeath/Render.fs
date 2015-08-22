@@ -78,7 +78,7 @@ module Render =
         <| renderCut (Scene.cut scene)
 
     /// Updates the scene shape, given the previous scene shape and the new scene state.
-    let updateSceneShape scene prevShape = 
+    let updateScene scene prevShape = 
         match SceneShape.cut prevShape with
         | Some cut -> removeCutShape cut
         | None     -> ()
