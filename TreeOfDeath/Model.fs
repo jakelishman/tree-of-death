@@ -126,3 +126,25 @@ module Tree =
 
     /// Get the parameters of a tree.
     let parameters tree = tree.TreeParameters
+
+    /// Create a new tree with the given quantities.
+    let create start node parameters =
+        { TreeStart      = start
+          TreeFirstNode  = node
+          TreeParameters = parameters }
+
+module Scene =
+    /// Get the tree from a scene.
+    let tree scene = scene.SceneTree
+
+    /// Get the target from a scene.
+    let target scene = scene.SceneTarget
+
+    /// Get the obstacle list from a scene.
+    let obstacles scene = scene.SceneObstacles
+
+    /// Create a scene with the given quantities.
+    let create tree obstacles target =
+        { SceneTree      = tree
+          SceneObstacles = obstacles
+          SceneTarget    = target }

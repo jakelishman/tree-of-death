@@ -2,7 +2,8 @@
 
 open Geometry
 
-module Update =
+[<AutoOpen>]
+module Logic =
     module private Quantities =
         /// The maximum fraction of the growth rate that each branch length may vary by.
         let growthVariation = 1.0 / 4.0
@@ -35,54 +36,60 @@ module Update =
     let private varyParameter (parameter : float<'T>) (variation : float<'T>) =
         parameter + Random.fraction () * variation
 
-    /// Choose a location to start the tree at.  Always picks somewhere close to the point (0, 0).
-    let private chooseStartLocation () =
-        let x = int <| varyParameter Quantities.startDistance Quantities.startVariation
-        let y = int <| varyParameter Quantities.startDistance Quantities.startVariation
-        Vertex.create x y
-
     /// Make a leaf branched out from a staring location, using the passed parameters.
     let private makeLeaf start parameters =
         let distance = varyParameter parameters.GrowthRate parameters.GrowthVariation
         let angle    = float <| varyParameter parameters.BranchAngle parameters.AngleVariation
         Leaf <| Vertex.create (int <| distance * cos angle) (int <| distance * sin angle)
 
-    /// Create an initial tree given a start vertex, and a direction and distance to grow in.
-    let private createTree target =
-        let start = chooseStartLocation ()
-        let growthRate =
-            distanceBetween start target.TargetCentre
-            |> float
-            |> (*) Quantities.growthDistanceFraction
-        let angle = angleBetween start target.TargetCentre
-        let parameters =
-            { GrowthRate        = growthRate
-              GrowthVariation   = growthRate * Quantities.growthVariation
-              BranchAngle       = angle
-              AngleVariation    = Quantities.angleVariation
-              BranchProbability = Quantities.branchProbability }
-        { TreeStart      = start
-          TreeFirstNode  = makeLeaf start parameters
-          TreeParameters = parameters }
+    module Init =
+        /// Choose a location to start the tree at.  Always picks somewhere close to the point (0, 0).
+        let private chooseStartLocation () =
+            let x = int <| varyParameter Quantities.startDistance Quantities.startVariation
+            let y = int <| varyParameter Quantities.startDistance Quantities.startVariation
+            Vertex.create x y
 
-    /// Choose a location for the target, probably close to the bottom right of the screen.
-    let private chooseTargetLocation windowSize =
-        let x =
-            varyParameter Quantities.targetDistance Quantities.targetVariation
-            |> int
-            |> (-) windowSize.X
-        let y =
-            varyParameter Quantities.targetDistance Quantities.targetVariation
-            |> int
-            |> (-) windowSize.Y
-        Vertex.create x y
+        /// Create an initial tree given a start vertex, and a direction and distance to grow in.
+        let private tree target =
+            let start = chooseStartLocation ()
+            let growthRate =
+                distanceBetween start target.TargetCentre
+                |> float
+                |> (*) Quantities.growthDistanceFraction
+            let angle = angleBetween start target.TargetCentre
+            let parameters =
+                { GrowthRate        = growthRate
+                  GrowthVariation   = growthRate * Quantities.growthVariation
+                  BranchAngle       = angle
+                  AngleVariation    = Quantities.angleVariation
+                  BranchProbability = Quantities.branchProbability }
+            let node = makeLeaf start parameters
+            Tree.create start node parameters
 
-    /// Choose the radius of the target object.
-    let private chooseTargetRadius () =
-        int <| varyParameter Quantities.targetRadius Quantities.targetRadiusVariation
+        /// Choose a location for the target, probably close to the bottom right of the screen.
+        let private chooseTargetLocation windowSize =
+            let x =
+                varyParameter Quantities.targetDistance Quantities.targetVariation
+                |> int
+                |> (-) windowSize.X
+            let y =
+                varyParameter Quantities.targetDistance Quantities.targetVariation
+                |> int
+                |> (-) windowSize.Y
+            Vertex.create x y
 
-    /// Create a new target object close to the bottom right of the window.
-    let private createTarget windowSize =
-        let location = chooseTargetLocation windowSize
-        let radius = chooseTargetRadius ()
-        Target.create location radius
+        /// Choose the radius of the target object.
+        let private chooseTargetRadius () =
+            int <| varyParameter Quantities.targetRadius Quantities.targetRadiusVariation
+
+        /// Create a new target object close to the bottom right of the window.
+        let private target windowSize =
+            let location = chooseTargetLocation windowSize
+            let radius = chooseTargetRadius ()
+            Target.create location radius
+
+        /// Initialise a new scene.
+        let scene windowSize =
+            let target = target windowSize
+            let tree   = tree target
+            Scene.create tree List.empty target
