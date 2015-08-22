@@ -58,20 +58,20 @@ module Model =
             | ShapeBranch of shapeId : string * left : TreeShape * right : TreeShape
 
         /// Contains all the shape identifies in the scene which belong to an obstacle.
-        type ObstacleShape = { Triangles : string list }
+        type ObstacleShape = { ObstacleTriangleIds : string list }
 
         /// Contains the shape identifier for the target in the scene.
-        type TargetShape = { TargetShape : string }
+        type TargetShape = { TargetEllipseId : string }
 
         /// Contains the shape identifier for a cut in the scene.
-        type CutShape = { CutShape : string }
+        type LineId = { CutLineId : string }
 
         /// Contains all the shapes in the scene.
         type SceneShape =
             { SceneTreeShape     : TreeShape
               SceneObstacleShape : ObstacleShape
               SceneTargetShape   : TargetShape
-              SceneCutShape      : CutShape option }
+              SceneCutShape      : LineId option }
 
     /// API functiosn for advancing updating the scene (Jake).
     type LogicApi =
@@ -85,7 +85,7 @@ module Model =
         { RenderTree      : Tree -> TreeShape
           RenderObstacle  : Obstacle -> ObstacleShape
           RenderTarget    : Target -> TargetShape
-          RenderCut       : Cut -> CutShape
+          RenderCut       : Cut -> LineId
           InitialiseScene : Scene -> SceneShape
           UpdateScene     : Scene -> SceneShape -> SceneShape }
 
@@ -181,14 +181,28 @@ module TreeShape =
     /// the left and right trees after the branch.
     let createBranch shapeId leftTree rightTree = ShapeBranch (shapeId, leftTree, rightTree)
 
+    /// Gets the list of child shape identifiers for the tree.
+    let rec childShapeIds = function
+        | ShapeLeaf shapeId -> [ shapeId ]
+        | ShapeBranch (shapeId, leftShape, rightShape) -> shapeId :: (List.append (childShapeIds leftShape) (childShapeIds rightShape))
+
 module ObstacleShape =
     /// Creates an obstacle shape consisting of the given list of triangle shapes.
-    let create triangleIds = { Triangles = triangleIds }
+    let create triangleIds = { ObstacleTriangleIds = triangleIds }
+
+    /// Gets the list of child shape identifiers for the tree.
+    let childShapeIds obstacleShape = obstacleShape.ObstacleTriangleIds
 
 module TargetShape =
     /// Creates a target shape with the specified shape identifier.
-    let create shapeId = { TargetShape = shapeId }
+    let create shapeId = { TargetEllipseId = shapeId }
+
+    /// Gets the shape identifier for the target.
+    let shapeId targetShape = targetShape.TargetEllipseId
 
 module CutShape =
     /// Creates a cut shape with the specified shape identifier.
-    let create shapeId = { CutShape = shapeId }
+    let create shapeId = { CutLineId = shapeId }
+
+    /// Gets the shape identifier for the cut.
+    let shapeId cutShape = cutShape.CutLineId
