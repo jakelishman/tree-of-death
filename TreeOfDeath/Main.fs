@@ -3,6 +3,7 @@
 module Main =
     let mutable scene      = Init.scene (Vertex.create 1024 768)
     let mutable sceneShape = Render.initialiseScene scene
+    let mutable cutStart   = None 
 
     open Library
 
@@ -15,7 +16,19 @@ module Main =
 
         Timer.Interval <- 50
         Timer.Tick <- (fun () -> 
-            let result = Update.scene scene None
+            let cut = 
+                match cutStart with
+                | Some start ->
+                    let isInPorgress = Mouse.IsLeftButtonDown
+                    let cut = Cut.create start (Vertex.create (int Mouse.X) (int Mouse.Y)) isInPorgress
+                    if not isInPorgress then cutStart <- None
+                    Some cut
+
+                | None ->
+                    if Mouse.IsLeftButtonDown then cutStart <- Some <| Vertex.create (int Mouse.X) (int Mouse.Y)
+                    None
+
+            let result = Update.scene scene cut
             match result with
             | GameInProgress newScene ->
                 scene <- newScene
