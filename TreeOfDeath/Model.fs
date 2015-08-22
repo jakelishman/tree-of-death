@@ -4,6 +4,9 @@ open Library
 
 [<AutoOpen>]
 module Model =
+    /// Radian unit of measure.
+    [<Measure>] type rad
+
     /// A point in 2 dimensions.
     type Vertex = { X : int ; Y : int }
 
@@ -15,11 +18,19 @@ module Model =
         | Leaf   of location : Vertex
         | Branch of location : Vertex * left : Node * right : Node
 
+    /// The parameters of the tree.
+    type TreeParameters =
+        { GrowthRate        : float
+          GrowthVariation   : float
+          BranchAngle       : float<rad>
+          AngleVariation    : float<rad>
+          BranchProbability : float }
+
     /// A tree.
     type Tree =
-       { // TODO: Add growth parameters (rate, branch angle coefficient, branching probability, etc.)
-         TreeStart     : Vertex
-         TreeFirstNode : Node }
+        { TreeStart      : Vertex
+          TreeFirstNode  : Node
+          TreeParameters : TreeParameters }
 
     /// The target which the tree needs to reach
     type Target =
@@ -41,7 +52,6 @@ module Model =
     [<AutoOpen>]
     /// Defines types which represent shapes added to the scene for later reference.
     module Shapes = 
-        
         /// Contains all the shapes identifiers in the scene which belong to a tree.
         type TreeShape =
             | ShapeLeaf   of shapeId : string
