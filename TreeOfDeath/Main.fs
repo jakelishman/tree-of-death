@@ -35,8 +35,10 @@ module Main =
                 sceneShape <- Render.updateScene scene sceneShape
             | GameWon ->
                 printfn "Game won!"
+                Timer.Tick <- (fun () -> ())
             | GameLost ->
-                printfn "Game lost!")
+                printfn "Game lost!"
+                Timer.Tick <- (fun () -> ()))
 
 
         printfn "%A" argv

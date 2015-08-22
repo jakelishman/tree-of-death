@@ -211,18 +211,23 @@ module Logic =
             let cut = Geometry.lineDifference endB startB
             let join = Geometry.lineDifference startB startA
             if (Geometry.cross branch cut) = 0 && (Geometry.cross join branch) <> 0 then
-                let t0 = float (Geometry.dot join branch) / Geometry.magnitude branch
-                let t1 = float (Geometry.dot (Geometry.lineAdd join cut) branch) / Geometry.magnitude branch
-                intersect0And1 t0 t1
+                None
             elif (Geometry.cross branch cut) <> 0 then
                 let t = float (Geometry.cross join cut) / float (Geometry.cross branch cut)
                 let u = float (Geometry.cross join branch) / float (Geometry.cross branch cut)
-                between0And1 t && between0And1 u
-            else false
+                if between0And1 t && between0And1 u then
+                    Some (Vertex.create (Vertex.x startA + (int t) * Line.x branch) (Vertex.y startA + (int t) * Line.y branch))
+                else None
+            else None
+
+        let private doesIntersect pointA pointB =
+            match intersect pointA pointB with
+            | Some s -> true
+            | None -> false
 
         /// Check if a branch intersects with an obstacle.
         let private obstacleIntersect branch obstacle =
-            let folder state line = state || intersect branch line
+            let folder state line = state || doesIntersect branch line
             Obstacle.vertices obstacle
             |> List.pairwise
             |> List.fold folder false
@@ -245,14 +250,21 @@ module Logic =
 
         /// Apply a cut to a tree.
         let prune cut tree =
-            let rec loop node prev = function
-                | Leaf cur when intersect (prev, cur) (Cut.start cut, Cut.finish cut) -> node
-                | Leaf cur -> Leaf cur
-                | Branch (cur, _, _) when intersect (prev, cur) (Cut.start cut, Cut.finish cut) -> node
+            let rec loop prev node =
+                match node with
+                | Leaf cur ->
+                    let intersection = intersect (prev, cur) (Cut.start cut, Cut.finish cut)
+                    match intersection with
+                    | Some s -> Leaf s
+                    | None -> Leaf cur
                 | Branch (cur, left, right) ->
-                    let node = Branch (cur, left, right)
-                    Branch (cur, loop node cur left, loop node cur right)
-            let node = loop (Tree.firstNode tree) (Vertex.create 0 0) (Tree.firstNode tree)
+                    let intersection = intersect (prev, cur) (Cut.start cut, Cut.finish cut)
+                    match intersection with
+                    | Some s -> Leaf s
+                    | None ->
+                        let node = Branch (cur, left, right)
+                        Branch (cur, loop cur left, loop cur right)
+            let node = loop (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = node }
 
         /// Update the state of the game by one tick.
