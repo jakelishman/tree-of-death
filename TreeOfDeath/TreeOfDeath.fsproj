@@ -58,7 +58,8 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Model.fs" />
-    <Compile Include="Logic.fs" />
+    <Compile Include="Random.fs" />
+    <Compile Include="Update.fs" />
     <Compile Include="Main.fs" />
     <None Include="App.config" />
   </ItemGroup>
