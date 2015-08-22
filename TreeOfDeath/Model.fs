@@ -61,10 +61,6 @@ module Vertex =
     /// Gets the y coordinate of a vertex.
     let y vertex = vertex.Y
 
-    /// Draws the vertex using the speicifed drawing function.
-    let draw drawFunc vertex =
-        drawFunc vertex.X vertex.Y
-
 module Obstacle = 
     /// Creates an obstacle defined by a polygon consisting of the specified vertex list.
     let create vertices =
