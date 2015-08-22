@@ -7,6 +7,9 @@ module GeometryModel =
 
     /// A point in 2 dimensions.
     type Vertex = { X : int ; Y : int }
+
+    /// A line in 2D.
+    type Line = {XDir : int ; YDir : int }
     
 module Vertex =
     /// Creates a vertex with the specified x and y coordinates.
@@ -17,6 +20,14 @@ module Vertex =
 
     /// Gets the y coordinate of a vertex.
     let y vertex = vertex.Y
+
+module Line =
+    let create x y =
+        { XDir = x
+          YDir = y }
+
+    let x line = line.XDir
+    let y line = line.YDir
 
 module Geometry =
     /// Calculate the absolute distance between two points.
@@ -44,6 +55,22 @@ module Geometry =
             |> int
             |> (+) (Vertex.y start)
         Vertex.create x y
+
+    /// Take the cross product between two position vectors.
+    let cross a b = Line.x a * Line.y b - Line.y a * Line.x b
+
+    /// Dot product.
+    let dot a v = Line.x a * Line.x b + Line.y a * Line.y b
+
+    /// Get the magnitude of a line (r . r).
+    let magnitude a = sqrt <| (float (Line.x a)) ** 2.0 + (float (Line.y a)) ** 2.0
+
+    /// Calculate a line of a difference between two points.
+    let lineDifference big small =
+        Line.create (Vertex.x big - Vertex.x small) (Vertex.y big - Vertex.y small)
+
+    /// Add two lines together.
+    let lineAdd a b = Line.create (Line.x a + Line.x b) (Line.y a + Line.y b)
 
     /// Indicates whether a vertex falls in the left or right half-plane of a line formed by two others.
     let sign v1 v2 v3 = 
