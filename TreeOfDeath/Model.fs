@@ -102,16 +102,30 @@ module Vertex =
 
 module Obstacle = 
     /// Creates an obstacle defined by a polygon consisting of the specified vertex list.
+    /// Assumes that the list of vertices represent a clockwise polygon.
     let create vertices =
         if List.length vertices < 3 then failwith "Cannot create an obstacle with fewer than 3 vertices."
         { ObstaclePolygon = vertices }
 
     /// Returns the vertices of all the triangles contained in an obstacle.
     let triangles obstacle = 
-        let v1 = List.head obstacle.ObstaclePolygon // take the first vertex
-        List.tail obstacle.ObstaclePolygon // and create a triangle for every subsequent pair of vertices
-        |> List.pairwise
-        |> List.map (fun (v2, v3) -> (v1, v2, v3))
+        // find all triangles in the clockwise polygon by the ear-clipping method.
+        let rec loop acc polygon =
+            match polygon with
+            | [] | [ _ ] | [ _ ; _ ] -> failwith "A polygon must have at least three vertices."
+            | [ v1 ; v2 ; v3 ]       -> (v1, v2, v3) :: acc // if the polgyon only has three vertices, it is a triangle
+            | v1 :: v2 :: v3 :: tail ->
+                // the z-component of the cross product indicates whether a triangle is clockwise or counter-clockwise
+                let crossProduct = Vertex.x v1 * Vertex.y v2 - Vertex.y v1 * Vertex.x v2
+                if crossProduct < 0 then
+                    let ear = (v1, v2, v3) // if the triange is clockwise then it is an ear of a clockwise polygon
+                    loop (ear :: acc) (v1 :: v3 :: tail) // so append the triangle to the accumulator and remove the middle vertex
+                elif crossProduct = 0 then // if v1, v2 and v3 are colinear
+                    loop acc (v1 :: v3 :: tail) // then simply remove the middle vertex
+                else // if the triangle is counter-clockwise, then proceed to the next vertex and append the first vertex to the end
+                    loop acc (List.append (v2 :: v3 :: tail) [ v1 ]) 
+
+        loop [] (obstacle.ObstaclePolygon)
 
 module Target = 
     /// Creates a target with the specified centre and radius.
