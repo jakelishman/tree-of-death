@@ -112,17 +112,17 @@ module Logic =
         let private obstacleLowerLeft =
             [ Vertex.create 0 768
               Vertex.create 0 100
-              Vertex.create 200 350
-              Vertex.create 100 768 ]
+              Vertex.create 100 350
+              Vertex.create 50 768 ]
             |> Obstacle.create
 
         let private obstacleTopRight =
             [ Vertex.create 1024 0
-              Vertex.create 1024 300
-              Vertex.create 700 400
-              Vertex.create 500 500
-              Vertex.create 350 200
-              Vertex.create 350 0 ]
+              Vertex.create 1024 150
+              Vertex.create 800 150
+              Vertex.create 500 300
+              Vertex.create 450 150
+              Vertex.create 450 0 ]
             |> Obstacle.create
 
         let private obstacleBottom =
