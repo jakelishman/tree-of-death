@@ -19,13 +19,18 @@ module Render =
             <| renderNode branchPoint leftBranch
             <| renderNode branchPoint rightBranch
 
-    /// Renders a tree, returning the generated tree shape which contains identifiers for all the
-    /// drawn shapes.
+    /// Renders a tree in the graphics window, returning the generated tree shape which contains
+    /// identifiers for all the drawn shapes.
     let private renderTree tree =
         renderNode (Tree.start tree) (Tree.firstNode tree)
     
-    /// Renders an obstacle, returning the generated obstacle shape which contains identifiers for
-    /// all the drawn shapes. 
+    /// Removes the tree shape fromm the graphics window.
+    let private removeTreeShape treeShape =
+        TreeShape.childShapeIds treeShape 
+        |> List.iter Shapes.Remove
+
+    /// Renders an obstacle in the graphics window, returning the generated obstacle shape which contains
+    /// identifiers for all the drawn shapes. 
     let private renderObstacle obstacle =
         Obstacle.triangles obstacle
         |> List.map (fun (v1, v2, v3) -> Shapes.AddTriangle (float <| Vertex.x v1, float <| Vertex.y v1,
@@ -33,17 +38,31 @@ module Render =
                                                              float <| Vertex.x v3, float <| Vertex.y v3))
         |> ObstacleShape.create
 
-    /// Renders a target, returning the generated obstacle shape which contains an identifier for the
-    /// drawn shape.
+    /// Removes the obstacle shape from the graphics window.
+    let private removeObstacle obstacleShape =
+        ObstacleShape.childShapeIds obstacleShape
+        |> List.iter Shapes.Remove
+
+    /// Renders a target in the graphics window, returning the generated obstacle shape which contains an
+    /// identifier for the drawn shape.
     let private renderTarget target =
         let centre = Target.centre target
         let shape = Shapes.AddEllipse(Target.radius target, Target.radius target)
         Shapes.Move(shape, Vertex.x centre, Vertex.y centre)
         shape |> TargetShape.create
 
-    /// Renders a cut, returning the generated cut shape which contains an identifier for the drawn shape.
+    /// Removes a target shape from the graphics window.
+    let private removeTarget targetShape =
+        TargetShape.shapeId targetShape |> Shapes.Remove
+
+    /// Renders a cut in the graphics window, returning the generated cut shape which contains an identifier
+    /// for the drawn shape.
     let private renderCut cut =
         if not <| Cut.isInProgress cut then failwith "Cannot draw a cut which has been performed."
         Shapes.AddLine(Vertex.x <| Cut.start  cut, Vertex.y <| Cut.start  cut,
                        Vertex.x <| Cut.finish cut, Vertex.y <| Cut.finish cut)
         |> CutShape.create
+
+    /// Removes a cut shape from the graphics window.
+    let private removeCut cutShape =
+        CutShape.shapeId cutShape |> Shapes.Remove
