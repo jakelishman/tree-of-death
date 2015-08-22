@@ -1,5 +1,7 @@
 ﻿namespace TreeOfDeath
 
+open Geometry
+
 module Update =
     module private Quantities =
         /// The maximum fraction of the growth rate that each branch length may vary by.
@@ -25,15 +27,6 @@ module Update =
     let private varyParameter (parameter : float<'T>) (variation : float<'T>) =
         parameter + Random.fraction () * variation
 
-    /// Calculate the absolute distance between two points.
-    let private distanceBetweenPoints a b =
-        sqrt <| (float b.X - float a.X) ** 2.0 + (float b.Y - float a.Y) ** 2.0
-
-    /// Calculate the bearing needed to go from point a to point b, where 0.0<rad> points
-    /// directly upwards.
-    let private angleBetweenPoints src dest =
-        1.0<rad> * atan2 (float dest.Y - float src.Y) (float dest.X - float src.X)
-
     /// Choose a location to start the tree at.  Always picks somewhere close to the point (0, 0).
     let private chooseStartLocation () =
         let x = int <| varyParameter Quantities.startDistance Quantities.startVariation
@@ -52,10 +45,10 @@ module Update =
     let private createTree target =
         let start = chooseStartLocation ()
         let growthRate =
-            distanceBetweenPoints start target.TargetCentre
+            distanceBetween start target.TargetCentre
             |> float
             |> (*) Quantities.growthDistanceFraction
-        let angle = angleBetweenPoints start target.TargetCentre
+        let angle = angleBetween start target.TargetCentre
         let parameters =
             { GrowthRate        = growthRate
               GrowthVariation   = growthRate * Quantities.growthVariation
