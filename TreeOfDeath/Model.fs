@@ -118,10 +118,17 @@ module Target =
         { TargetCentre = centre
           TargetRadius = radius }
 
+<<<<<<< HEAD
     /// Gets the vertex representing the centre of the target.
     let centre target = target.TargetCentre
 
     /// Gets the raidus of the target.
+=======
+    /// Get the centre of a target.
+    let centre target = target.TargetCentre
+
+    /// Get the radius of a target.
+>>>>>>> 7930b34636a44ac959c2beb448efd11a3529a4ab
     let radius target = target.TargetRadius
 
 module Tree =
@@ -131,6 +138,7 @@ module Tree =
     /// Gets the first node of a tree.
     let firstNode tree = tree.TreeFirstNode
 
+<<<<<<< HEAD
 module Cut =
     /// Creates a cut with the specified start and finish point and a flag indicating whether it is in
     /// progress or finished (i.e. when the player releases the mouse).
@@ -167,3 +175,7 @@ module TargetShape =
 module CutShape =
     /// Creates a cut shape with the specified shape identifier.
     let create shapeId = { CutShape = shapeId }
+=======
+    /// Get the parameters of a tree.
+    let parameters tree = tree.TreeParameters
+>>>>>>> 7930b34636a44ac959c2beb448efd11a3529a4ab
