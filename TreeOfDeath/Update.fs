@@ -208,7 +208,40 @@ module Logic =
                 |> (||) state
             List.fold folder false obstacles
 
-        let prune cut tree = tree
+        let private between0And1 a = (0.0 <= a && a <= 1.0)
+
+        /// Check a float is between 0 and 1.
+        let private intersect0And1 a b =
+            between0And1 a || between0And1 a
+            || (a < 0.0 && b > 1.0)
+            || (b < 0.0 && a > 1.0)
+
+        /// Check if two lines intersect.
+        let private intersect (start, finish) cut' =
+            let branch = Geometry.lineDifference finish start
+            let cut = Geometry.lineDifference (Cut.finish cut') (Cut.start cut')
+            let join = Geometry.lineDifference (Cut.start cut') start
+            if (Geometry.cross branch cut) = 0 && (Geometry.cross join branch) <> 0 then
+                let t0 = float (Geometry.dot join branch) / Geometry.magnitude branch
+                let t1 = float (Geometry.dot (Geometry.lineAdd join cut) branch) / Geometry.magnitude branch
+                intersect0And1 t0 t1
+            elif (Geometry.cross branch cut) <> 0 then
+                let t = float (Geometry.cross join cut) / float (Geometry.cross branch cut)
+                let u = float (Geometry.cross join branch) / float (Geometry.cross branch cut)
+                between0And1 t && between0And1 u
+            else false
+
+        /// Apply a cut to a tree.
+        let prune cut tree =
+            let rec loop node prev = function
+                | Leaf cur when intersect (prev, cur) cut -> node
+                | Leaf cur -> Leaf cur
+                | Branch (cur, _, _) when intersect (prev, cur) cut -> node
+                | Branch (cur, left, right) ->
+                    let node = Branch (cur, left, right)
+                    Branch (cur, loop node cur left, loop node cur right)
+            let node = loop (Tree.firstNode tree) (Vertex.create 0 0) (Tree.firstNode tree)
+            { tree with TreeFirstNode = node }
 
         /// Update the state of the game by one tick.
         let scene scene cut =
@@ -222,7 +255,7 @@ module Logic =
                 |> grow
                 |> cutter
             if collisionExists tree (Scene.obstacles scene) then GameLost
-            else if reachedTarget tree (Scene.target scene) then GameWon
+            elif reachedTarget tree (Scene.target scene) then GameWon
             else
                 scene
                 |> Scene.withTree tree
