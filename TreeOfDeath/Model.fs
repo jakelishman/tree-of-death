@@ -18,8 +18,8 @@ module Model =
     /// A tree.
     type Tree =
        { // TODO: Add growth parameters (rate, branch angle coefficient, branching probability, etc.)
-         StartLocation : Vertex
-         FirstNode     : Node }
+         Start     : Vertex
+         FirstNode : Node }
 
     /// The target which the tree needs to reach
     type Target =
@@ -72,3 +72,10 @@ module Target =
     let create centre radius =
         { Centre = centre
           Radius = radius }
+
+module Tree =
+    /// Gets the starting vertex of a tree.
+    let start tree = tree.Start
+
+    /// Gets the first node of a tree.
+    let firstNode tree = tree.FirstNode
