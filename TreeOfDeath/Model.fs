@@ -8,7 +8,7 @@ module Model =
     type Vertex = { X : int ; Y : int }
 
     /// Boundaries of a polygon obstacle.
-    type Obstacle = { Polygon : Vertex list }
+    type Obstacle = { ObstaclePolygon : Vertex list }
 
     /// A tree node.
     type Node =
@@ -18,24 +18,24 @@ module Model =
     /// A tree.
     type Tree =
        { // TODO: Add growth parameters (rate, branch angle coefficient, branching probability, etc.)
-         Start     : Vertex
-         FirstNode : Node }
+         TreeStart     : Vertex
+         TreeFirstNode : Node }
 
     /// The target which the tree needs to reach
     type Target =
-        { Centre : Vertex
-          Radius : int }
+        { TargetCentre : Vertex
+          TargetRadius : int }
 
     /// Defines a cut performed by the player which prunes the tree.
     type Cut =
-        { Start : Vertex 
-          End   : Vertex }
+        { CutStart : Vertex 
+          CutEnd   : Vertex }
     
     /// Defines the game scene.
     type Scene =
-        { Tree      : Tree
-          Obstacles : Obstacle list
-          Target    : Target }
+        { SceneTree      : Tree
+          SceneObstacles : Obstacle list
+          SceneTarget    : Target }
 
     /// API functiosn for advancing updating the scene (Jake).
     type LogicApi =
@@ -65,17 +65,17 @@ module Obstacle =
     /// Creates an obstacle defined by a polygon consisting of the specified vertex list.
     let create vertices =
         if List.length vertices < 3 then failwith "Cannot create an obstacle with fewer than 3 vertices."
-        { Polygon = vertices }
+        { ObstaclePolygon = vertices }
 
 module Target = 
     /// Creates a target with the specified centre and radius.
     let create centre radius =
-        { Centre = centre
-          Radius = radius }
+        { TargetCentre = centre
+          TargetRadius = radius }
 
 module Tree =
     /// Gets the starting vertex of a tree.
-    let start tree = tree.Start
+    let start tree = tree.TreeStart
 
     /// Gets the first node of a tree.
-    let firstNode tree = tree.FirstNode
+    let firstNode tree = tree.TreeFirstNode
