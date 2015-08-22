@@ -39,7 +39,7 @@ module Render =
         |> ObstacleShape.create
 
     /// Removes the obstacle shape from the graphics window.
-    let private removeObstacle obstacleShape =
+    let private removeObstacleShape obstacleShape =
         ObstacleShape.childShapeIds obstacleShape
         |> List.iter Shapes.Remove
 
@@ -52,17 +52,38 @@ module Render =
         shape |> TargetShape.create
 
     /// Removes a target shape from the graphics window.
-    let private removeTarget targetShape =
+    let private removeTargetShape targetShape =
         TargetShape.shapeId targetShape |> Shapes.Remove
 
     /// Renders a cut in the graphics window, returning the generated cut shape which contains an identifier
     /// for the drawn shape.
-    let private renderCut cut =
-        if not <| Cut.isInProgress cut then failwith "Cannot draw a cut which has been performed."
-        Shapes.AddLine(Vertex.x <| Cut.start  cut, Vertex.y <| Cut.start  cut,
-                       Vertex.x <| Cut.finish cut, Vertex.y <| Cut.finish cut)
-        |> CutShape.create
+    let private renderCut = function 
+        | Some cut -> 
+            Shapes.AddLine(Vertex.x <| Cut.start  cut, Vertex.y <| Cut.start  cut,
+                           Vertex.x <| Cut.finish cut, Vertex.y <| Cut.finish cut)
+            |> CutShape.create |> Some
+        | None -> None
 
+            
     /// Removes a cut shape from the graphics window.
-    let private removeCut cutShape =
+    let private removeCutShape cutShape =
         CutShape.shapeId cutShape |> Shapes.Remove
+
+    /// Initialises the scene, rendering all objects in it.
+    let initialiseScene scene =
+        SceneShape.create
+        <| renderTree (Scene.tree scene)
+        <| List.map renderObstacle (Scene.obstacles scene)
+        <| renderTarget (Scene.target scene)
+        <| renderCut (Scene.cut scene)
+
+    /// Updates the scene shape, given the previous scene shape and the new scene state.
+    let updateSceneShape scene prevShape = 
+        match SceneShape.cut prevShape with
+        | Some cut -> removeCutShape cut
+        | None     -> ()
+        removeTreeShape (SceneShape.tree prevShape)
+
+        prevShape
+        |> SceneShape.updateCut  (renderCut  <| Scene.cut scene)
+        |> SceneShape.updateTree (renderTree <| Scene.tree scene)

@@ -47,7 +47,8 @@ module Model =
     type Scene =
         { SceneTree      : Tree
           SceneObstacles : Obstacle list
-          SceneTarget    : Target }
+          SceneTarget    : Target
+          SceneCut       : Cut option }
 
     [<AutoOpen>]
     /// Defines types which represent shapes added to the scene for later reference.
@@ -58,20 +59,20 @@ module Model =
             | ShapeBranch of shapeId : string * left : TreeShape * right : TreeShape
 
         /// Contains all the shape identifies in the scene which belong to an obstacle.
-        type ObstacleShape = { ObstacleTriangleIds : string list }
+        type ObstaclesShape = { ObstacleTriangleIds : string list }
 
         /// Contains the shape identifier for the target in the scene.
         type TargetShape = { TargetEllipseId : string }
 
-        /// Contains the shape identifier for a cut in the scene.
-        type LineId = { CutLineId : string }
+        /// Contains the shape identifier for a cut in the scene, if there is one.
+        type CutShape = { CutLineId : string }
 
         /// Contains all the shapes in the scene.
         type SceneShape =
-            { SceneTreeShape     : TreeShape
-              SceneObstacleShape : ObstacleShape
-              SceneTargetShape   : TargetShape
-              SceneCutShape      : LineId option }
+            { SceneTreeShape      : TreeShape
+              SceneObstacleShapes : ObstaclesShape list
+              SceneTargetShape    : TargetShape
+              SceneCutShape       : CutShape option }
 
     /// API functiosn for advancing updating the scene (Jake).
     type LogicApi =
@@ -83,9 +84,9 @@ module Model =
     /// API functions for rendering the scene (Anton).
     type RenderApi =
         { RenderTree      : Tree -> TreeShape
-          RenderObstacle  : Obstacle -> ObstacleShape
+          RenderObstacle  : Obstacle -> ObstaclesShape
           RenderTarget    : Target -> TargetShape
-          RenderCut       : Cut -> LineId
+          RenderCut       : Cut -> CutShape
           InitialiseScene : Scene -> SceneShape
           UpdateScene     : Scene -> SceneShape -> SceneShape }
 
@@ -141,20 +142,24 @@ module Tree =
           TreeParameters = parameters }
 
 module Scene =
-    /// Get the tree from a scene.
+    /// Gets the tree from a scene.
     let tree scene = scene.SceneTree
 
-    /// Get the target from a scene.
+    /// Gets the target from a scene.
     let target scene = scene.SceneTarget
 
-    /// Get the obstacle list from a scene.
+    /// Gets the obstacle list from a scene.
     let obstacles scene = scene.SceneObstacles
 
+    /// Gets the cut for a scene.
+    let cut scene = scene.SceneCut
+
     /// Create a scene with the given quantities.
-    let create tree obstacles target =
+    let create tree obstacles target cut =
         { SceneTree      = tree
           SceneObstacles = obstacles
-          SceneTarget    = target }
+          SceneTarget    = target
+          SceneCut       = cut }
 
 module Cut =
     /// Creates a cut with the specified start and finish point and a flag indicating whether it is in
@@ -206,3 +211,29 @@ module CutShape =
 
     /// Gets the shape identifier for the cut.
     let shapeId cutShape = cutShape.CutLineId
+
+module SceneShape =
+    /// Creates a scene shape containing identifiers for all objects in the scene.
+    let create treeShape obstacleShapes targetShape cutShape =
+        { SceneTreeShape      = treeShape
+          SceneObstacleShapes = obstacleShapes
+          SceneTargetShape    = targetShape
+          SceneCutShape       = cutShape }
+
+    /// Gets the tree shape for a scene shape.
+    let tree sceneShape = sceneShape.SceneTreeShape
+
+    /// Gets the obstacle shapes for a scene shape.
+    let obstacles sceneShape = sceneShape.SceneObstacleShapes
+
+    /// Gets the target shapes for a scene shape.
+    let target sceneShape = sceneShape.SceneTargetShape
+
+    /// Gets the cut shape for a scene shape.
+    let cut sceneShape = sceneShape.SceneCutShape
+
+    /// Returns a new scene shape with the updated tree shape.
+    let updateTree treeShape sceneShape = { sceneShape with SceneTreeShape = treeShape }
+
+    /// Returns a new scene shape with the updated cut shape.
+    let updateCut cutShape sceneShape = { sceneShape with SceneCutShape = cutShape }
