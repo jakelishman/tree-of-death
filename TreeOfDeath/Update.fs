@@ -78,15 +78,15 @@ module Logic =
             Tree.create start node parameters
 
         /// Choose a location for the target, probably close to the bottom right of the screen.
-        let private chooseTargetLocation windowSize =
+        let private chooseTargetLocation bottomRightCorner =
             let x =
                 varyParameter Quantities.targetDistance Quantities.targetVariation
                 |> int
-                |> (-) windowSize.X
+                |> (-) bottomRightCorner.X
             let y =
                 varyParameter Quantities.targetDistance Quantities.targetVariation
                 |> int
-                |> (-) windowSize.Y
+                |> (-) bottomRightCorner.Y
             Vertex.create x y
 
         /// Choose the radius of the target object.
@@ -94,8 +94,8 @@ module Logic =
             int <| varyParameter Quantities.targetRadius Quantities.targetRadiusVariation
 
         /// Create a new target object close to the bottom right of the window.
-        let private target windowSize =
-            let location = chooseTargetLocation windowSize
+        let private target bottomRightCorner =
+            let location = chooseTargetLocation bottomRightCorner
             let radius = chooseTargetRadius ()
             Target.create location radius
 
@@ -103,31 +103,31 @@ module Logic =
         let private cons item list = item :: list
 
         /// Get the coordinates of the point projected onto the left edge.
-        let private leftEdge windowSize =
-            { windowSize with X = 0 }
+        let private leftEdge bottomRightCorner =
+            { bottomRightCorner with X = 0 }
 
         /// Get the coordinates of the point projected onto the top edge.
-        let private topEdge windowSize =
-            { windowSize with Y = 0 }
+        let private topEdge bottomRightCorner =
+            { bottomRightCorner with Y = 0 }
 
         /// Create the lower limiting wall of the level.
-        let private obstacleLowerWall windowSize path =
+        let private obstacleLowerWall bottomRightCorner path =
             path
             |> List.map (fun vert -> Vertex.create (Vertex.x vert) (Vertex.y vert + Quantities.wallYOffset))
             |> cons (leftEdge <| List.head path)
-            |> cons (leftEdge windowSize)
+            |> cons (leftEdge bottomRightCorner)
             |> List.rev
-            |> cons windowSize
+            |> cons bottomRightCorner
             |> Obstacle.create
 
         /// Create the upper limiting wall of the level.
-        let private obstacleUpperWall windowSize path =
+        let private obstacleUpperWall bottomRightCorner path =
             path
             |> List.map (fun vert -> Vertex.create (Vertex.x vert + Quantities.wallXOffset) (Vertex.y vert))
             |> cons (topEdge <| List.head path)
-            |> cons (topEdge windowSize)
+            |> cons (topEdge bottomRightCorner)
             |> List.rev
-            |> cons windowSize
+            |> cons bottomRightCorner
             |> Obstacle.create
 
         /// Create a vertex list of an approximate path for the tree.
@@ -145,13 +145,13 @@ module Logic =
             loop [start] start Quantities.pathSegments
 
         /// Create the obstacles for the level.
-        let private obstacles windowSize start target =
+        let private obstacles bottomRightCorner start target =
             let path = makePath start (Target.centre target)
-            [ obstacleLowerWall windowSize path ; obstacleUpperWall windowSize path ]
+            [ obstacleLowerWall bottomRightCorner path ; obstacleUpperWall bottomRightCorner path ]
 
         /// Initialise a new scene.
-        let scene windowSize =
-            let target    = target windowSize
+        let scene bottomRightCorner =
+            let target    = target bottomRightCorner
             let tree      = tree target
-            let obstacles = obstacles windowSize (Tree.start tree) target
+            let obstacles = obstacles bottomRightCorner (Tree.start tree) target
             Scene.create tree obstacles target
