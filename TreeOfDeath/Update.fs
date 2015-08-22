@@ -111,23 +111,12 @@ module Logic =
             { bottomRightCorner with Y = 0 }
 
         /// Create the lower limiting wall of the level.
-        let private obstacleLowerWall bottomRightCorner path =
-            path
-            |> List.map (fun vert -> Vertex.create (Vertex.x vert) (Vertex.y vert + Quantities.wallYOffset))
-            |> cons bottomRightCorner
-            |> List.rev
-            |> cons (leftEdge <| List.head path)
-            |> cons (leftEdge bottomRightCorner)
-            |> Obstacle.create
-
-        /// Create the upper limiting wall of the level.
-        let private obstacleUpperWall bottomRightCorner path =
-            path
-            |> List.map (fun vert -> Vertex.create (Vertex.x vert + Quantities.wallXOffset) (Vertex.y vert))
-            |> cons bottomRightCorner
-            |> List.rev
-            |> cons (topEdge <| List.head path)
-            |> cons (topEdge bottomRightCorner)
+        let private obstacleLowerWall =
+            [ Vertex.create 0 768
+              Vertex.create 0 100
+              Vertex.create 200 100
+              Vertex.create 300 700
+              Vertex.create 100 700 ]
             |> Obstacle.create
 
         /// Create a vertex list of an approximate path for the tree.
@@ -147,7 +136,7 @@ module Logic =
         /// Create the obstacles for the level.
         let private obstacles bottomRightCorner start target =
             let path = makePath start (Target.centre target)
-            [ obstacleLowerWall bottomRightCorner path ; obstacleUpperWall bottomRightCorner path ]
+            [ obstacleLowerWall ]
 
         /// Initialise a new scene.
         let scene bottomRightCorner =
