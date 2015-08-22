@@ -100,6 +100,9 @@ module Obstacle =
     let triangles obstacle = 
         Geometry.trianglesInPolygon obstacle.ObstaclePolygon
 
+    /// Get the vertices of the obstacle.
+    let vertices obstacle = obstacle.ObstaclePolygon
+
 module Target = 
     /// Creates a target with the specified centre and radius.
     let create centre radius =

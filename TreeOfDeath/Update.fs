@@ -189,9 +189,6 @@ module Logic =
             let newNode = loop (parameters.BranchProbability) (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = newNode }
 
-        /// Check if the tree has collided with an object.
-        let private collidedWith tree obstacle = false
-
         /// Check if the tree has reached the target, returning a boolean result.
         let private reachedTarget tree target =
             let rec loop = function
@@ -199,14 +196,6 @@ module Logic =
                     Geometry.distanceBetween location (Target.centre target) < (float <| Target.radius target)
                 | Branch (_, left, right) -> loop left || loop right
             loop (Tree.firstNode tree)
-
-        /// Check if a collision has occurred.
-        let private collisionExists tree obstacles =
-            let folder state obstacle =
-                obstacle
-                |> collidedWith tree
-                |> (||) state
-            List.fold folder false obstacles
 
         let private between0And1 a = (0.0 <= a && a <= 1.0)
 
@@ -217,10 +206,10 @@ module Logic =
             || (b < 0.0 && a > 1.0)
 
         /// Check if two lines intersect.
-        let private intersect (start, finish) cut' =
-            let branch = Geometry.lineDifference finish start
-            let cut = Geometry.lineDifference (Cut.finish cut') (Cut.start cut')
-            let join = Geometry.lineDifference (Cut.start cut') start
+        let private intersect (startA, endA) (startB, endB) =
+            let branch = Geometry.lineDifference endA startA
+            let cut = Geometry.lineDifference endB startB
+            let join = Geometry.lineDifference startB startA
             if (Geometry.cross branch cut) = 0 && (Geometry.cross join branch) <> 0 then
                 let t0 = float (Geometry.dot join branch) / Geometry.magnitude branch
                 let t1 = float (Geometry.dot (Geometry.lineAdd join cut) branch) / Geometry.magnitude branch
@@ -231,12 +220,35 @@ module Logic =
                 between0And1 t && between0And1 u
             else false
 
+        /// Check if a branch intersects with an obstacle.
+        let private obstacleIntersect branch obstacle =
+            let folder state line = state || intersect branch line
+            Obstacle.vertices obstacle
+            |> List.pairwise
+            |> List.fold folder false
+
+        /// Check if the tree has collided with an object.
+        let private collidedWith tree obstacle =
+            let rec loop prev = function
+                | Leaf cur -> obstacleIntersect (prev, cur) obstacle
+                | Branch (cur, left, right) ->
+                    loop cur left || loop cur right
+            loop (Vertex.create 0 0) (Tree.firstNode tree)
+
+        /// Check if a collision has occurred.
+        let private collisionExists tree obstacles =
+            let folder state obstacle =
+                obstacle
+                |> collidedWith tree
+                |> (||) state
+            List.fold folder false obstacles
+
         /// Apply a cut to a tree.
         let prune cut tree =
             let rec loop node prev = function
-                | Leaf cur when intersect (prev, cur) cut -> node
+                | Leaf cur when intersect (prev, cur) (Cut.start cut, Cut.finish cut) -> node
                 | Leaf cur -> Leaf cur
-                | Branch (cur, _, _) when intersect (prev, cur) cut -> node
+                | Branch (cur, _, _) when intersect (prev, cur) (Cut.start cut, Cut.finish cut) -> node
                 | Branch (cur, left, right) ->
                     let node = Branch (cur, left, right)
                     Branch (cur, loop node cur left, loop node cur right)
