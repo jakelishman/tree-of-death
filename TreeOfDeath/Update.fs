@@ -32,6 +32,17 @@ module Logic =
         /// The variation in the radius of the target.
         let targetRadiusVariation = 1.0 / 2.0
 
+        /// X offset of the path to make the upper wall.
+        let wallXOffset = 600
+        /// Y offset of the path to make the lower wall.
+        let wallYOffset = 600
+
+        /// Number of sections of path to have for the wall obstacles.
+        let pathSegments = 4
+
+        /// Maximum allowed variation in the angle the path takes from optimum.
+        let pathAngleVariation = 1.0<rad> * System.Math.PI / 12.0
+
     /// Given a length and variation, generate a new distance to grow.
     let private varyParameter (parameter : float<'T>) (variation : float<'T>) =
         parameter + Random.fraction () * variation
@@ -67,15 +78,15 @@ module Logic =
             Tree.create start node parameters
 
         /// Choose a location for the target, probably close to the bottom right of the screen.
-        let private chooseTargetLocation windowSize =
+        let private chooseTargetLocation bottomRightCorner =
             let x =
                 varyParameter Quantities.targetDistance Quantities.targetVariation
                 |> int
-                |> (-) windowSize.X
+                |> (-) bottomRightCorner.X
             let y =
                 varyParameter Quantities.targetDistance Quantities.targetVariation
                 |> int
-                |> (-) windowSize.Y
+                |> (-) bottomRightCorner.Y
             Vertex.create x y
 
         /// Choose the radius of the target object.
@@ -83,13 +94,64 @@ module Logic =
             int <| varyParameter Quantities.targetRadius Quantities.targetRadiusVariation
 
         /// Create a new target object close to the bottom right of the window.
-        let private target windowSize =
-            let location = chooseTargetLocation windowSize
+        let private target bottomRightCorner =
+            let location = chooseTargetLocation bottomRightCorner
             let radius = chooseTargetRadius ()
             Target.create location radius
 
+        /// Cons an item onto the front of a list.
+        let private cons item list = item :: list
+
+        /// Get the coordinates of the point projected onto the left edge.
+        let private leftEdge bottomRightCorner =
+            { bottomRightCorner with X = 0 }
+
+        /// Get the coordinates of the point projected onto the top edge.
+        let private topEdge bottomRightCorner =
+            { bottomRightCorner with Y = 0 }
+
+        /// Create the lower limiting wall of the level.
+        let private obstacleLowerWall bottomRightCorner path =
+            path
+            |> List.map (fun vert -> Vertex.create (Vertex.x vert) (Vertex.y vert + Quantities.wallYOffset))
+            |> cons (leftEdge <| List.head path)
+            |> cons (leftEdge bottomRightCorner)
+            |> List.rev
+            |> cons bottomRightCorner
+            |> Obstacle.create
+
+        /// Create the upper limiting wall of the level.
+        let private obstacleUpperWall bottomRightCorner path =
+            path
+            |> List.map (fun vert -> Vertex.create (Vertex.x vert + Quantities.wallXOffset) (Vertex.y vert))
+            |> cons (topEdge <| List.head path)
+            |> cons (topEdge bottomRightCorner)
+            |> List.rev
+            |> cons bottomRightCorner
+            |> Obstacle.create
+
+        /// Create a vertex list of an approximate path for the tree.
+        let private makePath start target =
+            let distance = (Geometry.distanceBetween start target) / float Quantities.pathSegments
+            let rec loop acc last = function
+                | 0 -> List.rev acc
+                | 1 -> loop (target :: acc) target 0
+                | i ->
+                    let angle = float <| varyParameter (Geometry.angleBetween last target) Quantities.pathAngleVariation
+                    let x = int <| distance * cos angle
+                    let y = int <| distance * sin angle
+                    let nextNode = Vertex.create x y
+                    loop (nextNode :: acc) nextNode (i - 1)
+            loop [start] start Quantities.pathSegments
+
+        /// Create the obstacles for the level.
+        let private obstacles bottomRightCorner start target =
+            let path = makePath start (Target.centre target)
+            [ obstacleLowerWall bottomRightCorner path ; obstacleUpperWall bottomRightCorner path ]
+
         /// Initialise a new scene.
-        let scene windowSize =
-            let target = target windowSize
-            let tree   = tree target
-            Scene.create tree List.empty target
+        let scene bottomRightCorner =
+            let target    = target bottomRightCorner
+            let tree      = tree target
+            let obstacles = obstacles bottomRightCorner (Tree.start tree) target
+            Scene.create tree obstacles target
