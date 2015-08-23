@@ -216,7 +216,7 @@ module Logic =
                 let t = float (Geometry.cross join cut) / float (Geometry.cross branch cut)
                 let u = float (Geometry.cross join branch) / float (Geometry.cross branch cut)
                 if between0And1 t && between0And1 u then
-                    Some (Vertex.create (Vertex.x startA + (int t) * Line.x branch) (Vertex.y startA + (int t) * Line.y branch))
+                    Some (Vertex.create (Vertex.x startA + int (t * (float (Line.x branch)))) (Vertex.y startA + int (t * (float (Line.y branch)))))
                 else None
             else None
 
@@ -250,20 +250,19 @@ module Logic =
 
         /// Apply a cut to a tree.
         let prune cut tree =
-            let rec loop prev node =
+            let rec loop startVertex node =
                 match node with
-                | Leaf cur ->
-                    let intersection = intersect (prev, cur) (Cut.start cut, Cut.finish cut)
+                | Leaf endVertex ->
+                    let intersection = intersect (startVertex, endVertex) (Cut.start cut, Cut.finish cut)
                     match intersection with
                     | Some s -> Leaf s
-                    | None -> Leaf cur
-                | Branch (cur, left, right) ->
-                    let intersection = intersect (prev, cur) (Cut.start cut, Cut.finish cut)
+                    | None   -> Leaf endVertex
+                | Branch (rootVertex, left, right) ->
+                    let intersection = intersect (startVertex, rootVertex) (Cut.start cut, Cut.finish cut)
                     match intersection with
                     | Some s -> Leaf s
-                    | None ->
-                        let node = Branch (cur, left, right)
-                        Branch (cur, loop cur left, loop cur right)
+                    | None   -> Branch (rootVertex, loop rootVertex left, loop rootVertex right)
+
             let node = loop (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = node }
 
