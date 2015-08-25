@@ -19,6 +19,7 @@ module Model =
           GrowthVariation   : float
           AngleBias         : float<rad>
           AngleBiasStrength : float
+          BendProbability   : float
           BranchProbability : float }
 
     /// A tree.

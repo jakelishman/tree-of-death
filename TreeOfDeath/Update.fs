@@ -15,6 +15,8 @@ module Logic =
         /// will always be directly in the angle of the bias, 0 means angles are entirely random.
         let angleBiasStrength = 1.0 / 2.0
 
+        /// Probability of a leaf bending in angle.
+        let bendProbability = 1.0 / 100.0
         /// The probability that a leaf will create a new branch at each step.
         let branchProbability = 1.0 / 100.0
 
@@ -79,6 +81,7 @@ module Logic =
                   GrowthVariation   = growthRate * Quantities.growthVariation
                   AngleBias         = angle
                   AngleBiasStrength = Quantities.angleBiasStrength
+                  BendProbability   = Quantities.bendProbability
                   BranchProbability = Quantities.branchProbability }
             let node = makeStartLeaf start parameters
             Tree.create start node parameters
@@ -160,6 +163,13 @@ module Logic =
             Scene.create tree obstacles target None
 
     module Update =
+        /// Create a single new node from a leaf.
+        let private bendLeaf start parameters =
+            let distance = varyParameter parameters.GrowthRate parameters.GrowthVariation
+            let angle = chooseAngle parameters.AngleBias parameters.AngleBiasStrength
+            let next = polarToRectangular start distance angle
+            Leaf next
+
         /// Create a (left, right) pair of leaf nodes from the current point.
         let private branchLeaf start parameters =
             let leftDistance  = varyParameter parameters.GrowthRate parameters.GrowthVariation
@@ -173,11 +183,14 @@ module Logic =
         /// Grow the tree through one step.
         let private grow tree =
             let parameters = Tree.parameters tree
-            let rec loop branchProbability root  = function
+            let rec loop branchProb bendProb root  = function
                 | Leaf point ->
-                    if Random.nonNegativeFraction () < branchProbability then
+                    if Random.nonNegativeFraction () < branchProb then
                         let (left, right) = branchLeaf point (Tree.parameters tree)
                         Branch (point, left, right)
+                    elif Random.nonNegativeFraction () < bendProb then
+                        let next = bendLeaf point (Tree.parameters tree)
+                        Bend (point, next)
                     else
                         let (dx, dy) = (Vertex.x point - Vertex.x root, Vertex.y point - Vertex.y root)
                         let length = sqrt(dx * dx + dy * dy)
@@ -185,11 +198,11 @@ module Logic =
                                         + varyParameter parameters.GrowthRate parameters.GrowthVariation
                         let (newdx, newdy) = (dx * (newLength / length), dy * (newLength / length))
                         Leaf (Vertex.create (Vertex.x root + newdx) (Vertex.y root + newdy))
-                | Bend (point, next) -> Bend (point, loop branchProbability point next)
+                | Bend (point, next) -> Bend (point, loop branchProb bendProb point next)
                 | Branch (point, left, right) -> 
-                    let newBranchProbability = branchProbability
-                    Branch (point, loop newBranchProbability point left, loop newBranchProbability point  right)
-            let newNode = loop (parameters.BranchProbability) (Tree.start tree) (Tree.firstNode tree)
+                    let branchProb' = branchProb
+                    Branch (point, loop branchProb' bendProb point left, loop branchProb' bendProb point right)
+            let newNode = loop (parameters.BranchProbability) (parameters.BendProbability) (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = newNode }
 
         /// Check if the tree has reached the target, returning a boolean result.
