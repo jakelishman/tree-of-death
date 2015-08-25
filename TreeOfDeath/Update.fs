@@ -269,22 +269,17 @@ module Logic =
 
         /// Apply a cut to a tree.
         let prune cut tree =
-            let rec loop startVertex = function
-                | Leaf endVertex ->
-                    let intersection = intersect (startVertex, endVertex) (Cut.start cut, Cut.finish cut)
-                    match intersection with
-                    | Some s -> Leaf s
-                    | None   -> Leaf endVertex
-                | Bend (endVertex, next) ->
-                    let intersection = intersect (startVertex, endVertex) (Cut.start cut, Cut.finish cut)
-                    match intersection with
-                    | Some s -> Leaf s
-                    | None   -> Bend (endVertex, loop endVertex next)
-                | Branch (rootVertex, left, right) ->
-                    let intersection = intersect (startVertex, rootVertex) (Cut.start cut, Cut.finish cut)
-                    match intersection with
-                    | Some s -> Leaf s
-                    | None   -> Branch (rootVertex, loop rootVertex left, loop rootVertex right)
+            let rec loop startVertex node =
+                // return function nodeCreate () so the loop doesn't occur unless we need it to.
+                let (vertex, nodeCreate) =
+                    match node with
+                    | Leaf cur -> (cur, (fun () -> Leaf cur))
+                    | Bend (cur, next) -> (cur, (fun () -> Bend (cur, loop cur next)))
+                    | Branch (cur, left, right) ->
+                        (cur, (fun () -> Branch (cur, loop cur left, loop cur right)))
+                match intersect (startVertex, vertex) (Cut.start cut, Cut.finish cut) with
+                | Some s -> Leaf s
+                | None   -> nodeCreate ()
             let node = loop (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = node }
 
