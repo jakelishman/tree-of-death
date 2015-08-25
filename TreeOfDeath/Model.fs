@@ -10,14 +10,15 @@ module Model =
     /// A tree node.
     type Node =
         | Leaf   of location : Vertex
+        | Bend   of location : Vertex * next : Node
         | Branch of location : Vertex * left : Node * right : Node
 
     /// The parameters of the tree.
     type TreeParameters =
         { GrowthRate        : float
           GrowthVariation   : float
-          BranchAngle       : float<rad>
-          AngleVariation    : float<rad>
+          AngleBias         : float<rad>
+          AngleBiasStrength : float
           BranchProbability : float }
 
     /// A tree.
@@ -29,7 +30,7 @@ module Model =
     /// The target which the tree needs to reach
     type Target =
         { TargetCentre : Vertex
-          TargetRadius : int }
+          TargetRadius : float }
 
     /// Defines a cut performed by the player which prunes the tree.
     type Cut =
@@ -56,6 +57,7 @@ module Model =
         /// Contains all the shapes identifiers in the scene which belong to a tree.
         type TreeShape =
             | ShapeLeaf   of shapeId : string
+            | ShapeBend   of shapeId : string * next : TreeShape
             | ShapeBranch of shapeId : string * left : TreeShape * right : TreeShape
 
         /// Contains all the shape identifies in the scene which belong to an obstacle.
@@ -181,6 +183,10 @@ module TreeShape =
     /// Creates a tree shape containing a single leaf.
     let createLeaf shapeId = ShapeLeaf shapeId
 
+    /// Creates a tree shape containing a shape leading up to a bend, then the shapes for the
+    /// trees after the bend.
+    let createBend shapeId nextTree = ShapeBend (shapeId, nextTree)
+
     /// Creates a tree shape containing a shape leading up to a branch point and the shapes for
     /// the left and right trees after the branch.
     let createBranch shapeId leftTree rightTree = ShapeBranch (shapeId, leftTree, rightTree)
@@ -188,6 +194,7 @@ module TreeShape =
     /// Gets the list of child shape identifiers for the tree.
     let rec childShapeIds = function
         | ShapeLeaf shapeId -> [ shapeId ]
+        | ShapeBend (shapeId, nextShape) -> shapeId :: childShapeIds nextShape
         | ShapeBranch (shapeId, leftShape, rightShape) -> shapeId :: (List.append (childShapeIds leftShape) (childShapeIds rightShape))
 
 module ObstacleShape =

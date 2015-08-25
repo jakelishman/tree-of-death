@@ -12,7 +12,10 @@ module Render =
         | Leaf finish -> 
             TreeShape.createLeaf 
             <| Shapes.AddLine (Vertex.x start, Vertex.y start, Vertex.x finish, Vertex.y finish)
-
+        | Bend (point, next) ->
+            TreeShape.createBend
+            <| Shapes.AddLine (Vertex.x start, Vertex.y start, Vertex.x point, Vertex.y point)
+            <| renderNode point next
         // if this is a branch node then create a branch shape containing the line from the start to
         // the branch point and shapes for left and right branches
         | Branch (branchPoint, leftBranch, rightBranch) -> 
@@ -39,9 +42,9 @@ module Render =
         GraphicsWindow.PenWidth   <- 0.0
         GraphicsWindow.BrushColor <- DarkGreen
         Obstacle.triangles obstacle
-        |> List.map (fun (v1, v2, v3) -> Shapes.AddTriangle (float <| Vertex.x v1, float <| Vertex.y v1,
-                                                             float <| Vertex.x v2, float <| Vertex.y v2,
-                                                             float <| Vertex.x v3, float <| Vertex.y v3))
+        |> List.map (fun (v1, v2, v3) -> Shapes.AddTriangle (Vertex.x v1, Vertex.y v1,
+                                                             Vertex.x v2, Vertex.y v2,
+                                                             Vertex.x v3, Vertex.y v3))
         |> ObstacleShape.create
 
     /// Removes the obstacle shape from the graphics window.
@@ -55,7 +58,7 @@ module Render =
         GraphicsWindow.PenWidth <- 0.0
         GraphicsWindow.BrushColor <- Red
         let centre = Target.centre target
-        let shape = Shapes.AddEllipse(2 * Target.radius target, 2 * Target.radius target)
+        let shape = Shapes.AddEllipse(2.0 * Target.radius target, 2.0 * Target.radius target)
         Shapes.Move(shape, Vertex.x centre - Target.radius target, Vertex.y centre - Target.radius target)
         shape |> TargetShape.create
 

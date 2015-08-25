@@ -6,10 +6,10 @@ module GeometryModel =
     [<Measure>] type rad
 
     /// A point in 2 dimensions.
-    type Vertex = { X : int ; Y : int }
+    type Vertex = { X : float ; Y : float }
 
     /// A line in 2D.
-    type Line = {XDir : int ; YDir : int }
+    type Line = {XDir : float ; YDir : float }
     
 module Vertex =
     /// Creates a vertex with the specified x and y coordinates.
@@ -47,12 +47,10 @@ module Geometry =
         let x =
             distance
             |> (*) (cos angle)
-            |> int
             |> (+) (Vertex.x start)
         let y =
             distance
             |> (*) (sin angle)
-            |> int
             |> (+) (Vertex.y start)
         Vertex.create x y
 
@@ -63,7 +61,7 @@ module Geometry =
     let dot a b = Line.x a * Line.x b + Line.y a * Line.y b
 
     /// Get the magnitude of a line (r . r).
-    let magnitude a = sqrt <| (float (Line.x a)) ** 2.0 + (float (Line.y a)) ** 2.0
+    let magnitude a = sqrt <| (Line.x a) ** 2.0 + (Line.y a) ** 2.0
 
     /// Calculate a line of a difference between two points.
     let lineDifference big small =
@@ -74,9 +72,9 @@ module Geometry =
 
     /// Indicates whether a vertex falls in the left or right half-plane of a line formed by two others.
     let sign v1 v2 v3 = 
-            let (x1, y1) = (float <| Vertex.x v1, float <| Vertex.y v1)
-            let (x2, y2) = (float <| Vertex.x v2, float <| Vertex.y v2)
-            let (x3, y3) = (float <| Vertex.x v3, float <| Vertex.y v3)
+            let (x1, y1) = (Vertex.x v1, Vertex.y v1)
+            let (x2, y2) = (Vertex.x v2, Vertex.y v2)
+            let (x3, y3) = (Vertex.x v3, Vertex.y v3)
             (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3)
     
     /// Checks whether a point is inside a triangle formed by the three specified vertices.

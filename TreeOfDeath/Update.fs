@@ -11,15 +11,12 @@ module Logic =
         /// will grow by each step.
         let growthDistanceFraction = 1.0 / 40.0
 
-        /// The angle added to the left branch of the tree.
-        let angleLeft = System.Math.PI / 18.0 * 1.0<rad>
-        /// The angle added to the right branch of the tree.
-        let angleRight = System.Math.PI / 18.0 * -1.0<rad>
-        /// The maximum angle variation that each branch may grow towards.
-        let angleVariation = System.Math.PI / 4.0 * 1.0<rad>
+        /// A quantity associated with the chance to deviate from the angle bias.  1 means angles
+        /// will always be directly in the angle of the bias, 0 means angles are entirely random.
+        let angleBiasStrength = 1.0 / 2.0
 
         /// The probability that a leaf will create a new branch at each step.
-        let branchProbability = 1.0 / 5.0
+        let branchProbability = 1.0 / 100.0
 
         /// The approximate distance in from the top left that the tree will begin at.
         let startDistance = 50.0
@@ -51,17 +48,22 @@ module Logic =
     let private varyParameter (parameter : float<'T>) (variation : float<'T>) =
         parameter + Random.fraction () * variation
 
+    /// Choose an angle based on a bias angle and a strength of the bias.
+    let private chooseAngle (bias : float<rad>) (strength : float) =
+        let bias' = float bias
+        bias' + (1.0 - strength) * Random.fraction () * System.Math.PI
+
     module Init =
         /// Make a leaf branched out from a staring location, using the passed parameters.
         let private makeStartLeaf start parameters =
             // let distance = varyParameter parameters.GrowthRate parameters.GrowthVariation
             // let angle    = float <| varyParameter parameters.BranchAngle parameters.AngleVariation
-            Leaf <| Vertex.create (int <| 100) (int <| 100)
+            Leaf <| Vertex.create 100.0 100.0
 
         /// Choose a location to start the tree at.  Always picks somewhere close to the point (0, 0).
         let private chooseStartLocation () =
-            let x = 75 // int <| varyParameter Quantities.startDistance Quantities.startVariation
-            let y = 75 // int <| varyParameter Quantities.startDistance Quantities.startVariation
+            let x = 75.0 // int <| varyParameter Quantities.startDistance Quantities.startVariation
+            let y = 75.0 // int <| varyParameter Quantities.startDistance Quantities.startVariation
             Vertex.create x y
 
         /// Create an initial tree given a start vertex, and a direction and distance to grow in.
@@ -75,21 +77,21 @@ module Logic =
             let parameters =
                 { GrowthRate        = growthRate
                   GrowthVariation   = growthRate * Quantities.growthVariation
-                  BranchAngle       = angle
-                  AngleVariation    = Quantities.angleVariation
+                  AngleBias         = angle
+                  AngleBiasStrength = Quantities.angleBiasStrength
                   BranchProbability = Quantities.branchProbability }
             let node = makeStartLeaf start parameters
             Tree.create start node parameters
 
         /// Choose a location for the target, probably close to the bottom right of the screen.
         let private chooseTargetLocation bottomRightCorner =
-            let x = 900
-            let y = 550
+            let x = 900.0
+            let y = 550.0
             Vertex.create x y
 
         /// Choose the radius of the target object.
         let private chooseTargetRadius () =
-            int <| varyParameter Quantities.targetRadius Quantities.targetRadiusVariation
+            varyParameter Quantities.targetRadius Quantities.targetRadiusVariation
 
         /// Create a new target object close to the bottom right of the window.
         let private target bottomRightCorner =
@@ -102,33 +104,33 @@ module Logic =
 
         /// Get the coordinates of the point projected onto the left edge.
         let private leftEdge bottomRightCorner =
-            { bottomRightCorner with X = 0 }
+            { bottomRightCorner with X = 0.0 }
 
         /// Get the coordinates of the point projected onto the top edge.
         let private topEdge bottomRightCorner =
-            { bottomRightCorner with Y = 0 }
+            { bottomRightCorner with Y = 0.0 }
 
         /// Create the lower limiting wall of the level.
         let private obstacleLowerLeft =
-            [ Vertex.create 0 768
-              Vertex.create 0 100
-              Vertex.create 100 350
-              Vertex.create 50 768 ]
+            [ Vertex.create 0.0 768.0
+              Vertex.create 0.0 100.0
+              Vertex.create 100.0 350.0
+              Vertex.create 50.0 768.0 ]
             |> Obstacle.create
 
         let private obstacleTopRight =
-            [ Vertex.create 1024 0
-              Vertex.create 1024 150
-              Vertex.create 800 150
-              Vertex.create 500 300
-              Vertex.create 450 150
-              Vertex.create 450 0 ]
+            [ Vertex.create 1024.0 0.0
+              Vertex.create 1024.0 150.0
+              Vertex.create 800.0 150.0
+              Vertex.create 500.0 300.0
+              Vertex.create 450.0 150.0
+              Vertex.create 450.0 0.0 ]
             |> Obstacle.create
 
         let private obstacleBottom =
-            [ Vertex.create 500 768 
-              Vertex.create 650 680
-              Vertex.create 800 768 ]
+            [ Vertex.create 500.0 768.0
+              Vertex.create 650.0 680.0
+              Vertex.create 800.0 768.0 ]
             |> Obstacle.create
 
         /// Create a vertex list of an approximate path for the tree.
@@ -139,8 +141,8 @@ module Logic =
                 | 1 -> loop (target :: acc) target 0
                 | i ->
                     let angle = float <| varyParameter (Geometry.angleBetween last target) Quantities.pathAngleVariation
-                    let x = int <| distance * cos angle
-                    let y = int <| distance * sin angle
+                    let x = distance * cos angle
+                    let y = distance * sin angle
                     let nextNode = Vertex.create x y
                     loop (nextNode :: acc) nextNode (i - 1)
             loop [start] start Quantities.pathSegments
@@ -162,9 +164,8 @@ module Logic =
         let private branchLeaf start parameters =
             let leftDistance  = varyParameter parameters.GrowthRate parameters.GrowthVariation
             let rightDistance = varyParameter parameters.GrowthRate parameters.GrowthVariation
-            let angle = varyParameter parameters.BranchAngle parameters.AngleVariation
-            let leftAngle  = float <| angle + Quantities.angleLeft
-            let rightAngle = float <| angle + Quantities.angleRight
+            let leftAngle  = chooseAngle parameters.AngleBias parameters.AngleBiasStrength
+            let rightAngle = chooseAngle parameters.AngleBias parameters.AngleBiasStrength
             let left  = polarToRectangular start leftDistance leftAngle
             let right = polarToRectangular start rightDistance rightAngle
             (Leaf left, Leaf right)
@@ -173,19 +174,21 @@ module Logic =
         let private grow tree =
             let parameters = Tree.parameters tree
             let rec loop branchProbability root  = function
-                | Leaf vertex ->
+                | Leaf point ->
                     if Random.nonNegativeFraction () < branchProbability then
-                        let (left, right) = branchLeaf vertex (Tree.parameters tree)
-                        Branch (vertex, left, right)
+                        let (left, right) = branchLeaf point (Tree.parameters tree)
+                        Branch (point, left, right)
                     else
-                        let (dx, dy) = (float <| Vertex.x vertex - Vertex.x root, float <| Vertex.y vertex - Vertex.y root)
+                        let (dx, dy) = (Vertex.x point - Vertex.x root, Vertex.y point - Vertex.y root)
                         let length = sqrt(dx * dx + dy * dy)
-                        let newLength = length + parameters.GrowthRate
-                        let (newdx, newdy) = (int <| (dx * (newLength / length)), int <| (dy * (newLength / length)))
+                        let newLength = length
+                                        + varyParameter parameters.GrowthRate parameters.GrowthVariation
+                        let (newdx, newdy) = (dx * (newLength / length), dy * (newLength / length))
                         Leaf (Vertex.create (Vertex.x root + newdx) (Vertex.y root + newdy))
-                | Branch (barnchPoint, left, right) -> 
-                    let newBranchProbability = branchProbability * (sqrt parameters.BranchProbability)
-                    Branch (barnchPoint, loop newBranchProbability barnchPoint left, loop newBranchProbability barnchPoint  right)
+                | Bend (point, next) -> Bend (point, loop branchProbability point next)
+                | Branch (point, left, right) -> 
+                    let newBranchProbability = branchProbability
+                    Branch (point, loop newBranchProbability point left, loop newBranchProbability point  right)
             let newNode = loop (parameters.BranchProbability) (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = newNode }
 
@@ -194,6 +197,7 @@ module Logic =
             let rec loop = function
                 | Leaf location ->
                     Geometry.distanceBetween location (Target.centre target) < (float <| Target.radius target)
+                | Bend (_, next) -> loop next
                 | Branch (_, left, right) -> loop left || loop right
             loop (Tree.firstNode tree)
 
@@ -210,13 +214,14 @@ module Logic =
             let branch = Geometry.lineDifference endA startA
             let cut = Geometry.lineDifference endB startB
             let join = Geometry.lineDifference startB startA
-            if (Geometry.cross branch cut) = 0 && (Geometry.cross join branch) <> 0 then
+            if (Geometry.cross branch cut) = 0.0 && (Geometry.cross join branch) <> 0.0 then
                 None
-            elif (Geometry.cross branch cut) <> 0 then
+            elif (Geometry.cross branch cut) <> 0.0 then
                 let t = float (Geometry.cross join cut) / float (Geometry.cross branch cut)
                 let u = float (Geometry.cross join branch) / float (Geometry.cross branch cut)
                 if between0And1 t && between0And1 u then
-                    Some (Vertex.create (Vertex.x startA + int (t * (float (Line.x branch)))) (Vertex.y startA + int (t * (float (Line.y branch)))))
+                    Some <| Vertex.create (Vertex.x startA + t * float (Line.x branch))
+                                          (Vertex.y startA + t * float (Line.y branch))
                 else None
             else None
 
@@ -236,9 +241,10 @@ module Logic =
         let private collidedWith tree obstacle =
             let rec loop prev = function
                 | Leaf cur -> obstacleIntersect (prev, cur) obstacle
+                | Bend (cur, next) -> loop cur next
                 | Branch (cur, left, right) ->
                     loop cur left || loop cur right
-            loop (Vertex.create 0 0) (Tree.firstNode tree)
+            loop (Vertex.create 0.0 0.0) (Tree.firstNode tree)
 
         /// Check if a collision has occurred.
         let private collisionExists tree obstacles =
@@ -250,19 +256,22 @@ module Logic =
 
         /// Apply a cut to a tree.
         let prune cut tree =
-            let rec loop startVertex node =
-                match node with
+            let rec loop startVertex = function
                 | Leaf endVertex ->
                     let intersection = intersect (startVertex, endVertex) (Cut.start cut, Cut.finish cut)
                     match intersection with
                     | Some s -> Leaf s
                     | None   -> Leaf endVertex
+                | Bend (endVertex, next) ->
+                    let intersection = intersect (startVertex, endVertex) (Cut.start cut, Cut.finish cut)
+                    match intersection with
+                    | Some s -> Leaf s
+                    | None   -> Bend (endVertex, loop endVertex next)
                 | Branch (rootVertex, left, right) ->
                     let intersection = intersect (startVertex, rootVertex) (Cut.start cut, Cut.finish cut)
                     match intersection with
                     | Some s -> Leaf s
                     | None   -> Branch (rootVertex, loop rootVertex left, loop rootVertex right)
-
             let node = loop (Tree.start tree) (Tree.firstNode tree)
             { tree with TreeFirstNode = node }
 
